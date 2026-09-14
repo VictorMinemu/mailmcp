@@ -1,3 +1,13 @@
+import {
+  initLanguage,
+  changeLanguage,
+  language,
+  message as msg,
+  t,
+  setText,
+  UiError,
+  validateField,
+} from './i18n.js';
 const $ = (id) => document.getElementById(id);
 const state = {
   accounts: [],
@@ -9,7 +19,7 @@ const state = {
   generation: 0,
 };
 let loginToken = new URLSearchParams(location.hash.slice(1)).get('token');
-if (location.hash) history.replaceState(null, '', location.pathname);
+if (location.hash) history.replaceState(null, '', location.pathname + location.search);
 // A new login link starts a fresh document: no previous user's mail, drafts or
 // in-flight responses can survive a switch of browser identity.
 window.addEventListener('hashchange', () => {
@@ -17,13 +27,13 @@ window.addEventListener('hashchange', () => {
 });
 
 function notice(message, error = false) {
-  $('notice').textContent = message;
+  setText($('notice'), message);
   $('notice').className = error ? 'error' : '';
   $('notice').hidden = !message;
 }
 function node(tag, text, className) {
   const n = document.createElement(tag);
-  n.textContent = text;
+  setText(n, text);
   if (className) n.className = className;
   return n;
 }
@@ -31,7 +41,10 @@ async function api(path, method = 'GET', data) {
   const response = await fetch(path, {
     method,
     credentials: 'same-origin',
-    headers: data === undefined ? {} : { 'content-type': 'application/json' },
+    headers: {
+      'accept-language': language(),
+      ...(data === undefined ? {} : { 'content-type': 'application/json' }),
+    },
     ...(data === undefined ? {} : { body: JSON.stringify(data) }),
   });
   const result = await response.json();
@@ -47,7 +60,12 @@ async function api(path, method = 'GET', data) {
       $('reader').replaceChildren();
       document.querySelectorAll('dialog[open]').forEach((d) => d.close());
     }
-    throw new Error(result.message || 'No se pudo completar la operación.');
+    throw new UiError(
+      result.messageKey ??
+        result.message ??
+        'Operation failed. Check configuration, connectivity and credentials. A failed send may still have been accepted; check before retrying.',
+      'errors',
+    );
   }
   return result;
 }
@@ -59,7 +77,7 @@ function on(id, callback) {
     try {
       await callback();
     } catch (e) {
-      notice(e.message, true);
+      notice(e.localized ?? msg('failed'), true);
     } finally {
       button.disabled = false;
     }
@@ -73,7 +91,7 @@ function button(text, callback) {
     try {
       await callback();
     } catch (e) {
-      notice(e.message, true);
+      notice(e.localized ?? msg('failed'), true);
     } finally {
       b.disabled = false;
     }
@@ -99,21 +117,17 @@ async function selectAccount(account) {
   state.account = account;
   state.folder = 'INBOX';
   state.nextBefore = null;
-  $('account-title').textContent = account.label;
-  $('account-address').textContent = `${account.senderName} <${account.email}>`;
+  setText($('account-title'), account.label);
+  setText($('account-address'), `${account.senderName} <${account.email}>`);
   $('account-actions').hidden = false;
   $('compose').disabled = !account.smtp;
   $('mail-controls').hidden = !account.incoming;
   $('create-folder').hidden = account.incoming?.protocol !== 'imap';
   $('older').hidden = true;
-  $('reader').replaceChildren(node('p', 'Selecciona un mensaje para leerlo.', 'muted'));
+  $('reader').replaceChildren(node('p', msg('select_read'), 'muted'));
   await loadAccounts();
   $('messages').replaceChildren(
-    node(
-      'p',
-      account.incoming ? 'Consultando carpetas…' : 'Esta cuenta está configurada solo para enviar.',
-      'empty',
-    ),
+    node('p', account.incoming ? msg('loading_folders') : msg('send_only'), 'empty'),
   );
   if (!account.incoming) return;
   const generation = state.generation,
@@ -133,7 +147,7 @@ async function selectAccount(account) {
 async function loadMessages(before) {
   if (!state.account?.incoming) return;
   const generation = ++state.generation;
-  $('messages').replaceChildren(node('p', 'Consultando mensajes…', 'empty'));
+  $('messages').replaceChildren(node('p', msg('loading_messages'), 'empty'));
   $('older').hidden = true;
   const result = await mail('list', {
     accountId: state.account.id,
@@ -150,15 +164,21 @@ async function loadMessages(before) {
       const b = button('', () => readMessage(message));
       b.className = 'message';
       b.append(
-        node('small', message.from?.map((f) => f.name || f.address).join(', ') || 'Mensaje POP3'),
+        node(
+          'small',
+          message.from?.map((f) => f.name || f.address).join(', ') || msg('pop_message'),
+        ),
         node('strong', message.subject || message.messageId),
-        node('small', message.date ? new Date(message.date).toLocaleString() : 'Abrir mensaje'),
+        node(
+          'small',
+          message.date ? new Date(message.date).toLocaleString(language()) : msg('open_message'),
+        ),
       );
+      if (message.date) b.lastElementChild.dataset.date = message.date;
       return b;
     }),
   );
-  if (!result.messages.length)
-    $('messages').append(node('p', 'No hay mensajes en esta carpeta.', 'empty'));
+  if (!result.messages.length) $('messages').append(node('p', msg('no_messages'), 'empty'));
 }
 async function readMessage(message) {
   const generation = state.generation,
@@ -173,14 +193,14 @@ async function readMessage(message) {
   });
   if (generation !== state.generation) return;
   $('reader').replaceChildren(
-    node('h2', result.subject || '(Sin asunto)'),
-    node('p', `De: ${result.from || '—'}`, 'muted'),
-    node('p', `Para: ${result.to || '—'}`, 'muted'),
+    node('h2', result.subject || msg('no_subject')),
+    node('p', msg('from_value', { value: result.from || '—' }), 'muted'),
+    node('p', msg('to_value', { value: result.to || '—' }), 'muted'),
   );
   if (uidValidity) {
     const actions = node('div', '', 'actions');
     actions.append(
-      button('Marcar como leído', async () => {
+      button(msg('mark_read'), async () => {
         await mail('flag', {
           accountId,
           folder,
@@ -189,13 +209,13 @@ async function readMessage(message) {
           flag: 'seen',
           value: true,
         });
-        notice('Mensaje marcado como leído.');
+        notice(msg('marked_read'));
       }),
     );
     actions.append(
-      button('Mover a carpeta', async () => {
-        const destination = prompt('Nombre exacto de la carpeta de destino:');
-        if (destination && confirm(`¿Mover este mensaje a ${destination}?`)) {
+      button(msg('move'), async () => {
+        const destination = prompt(t('destination_prompt'));
+        if (destination && confirm(t('move_confirm', { destination }))) {
           await mail('move', {
             accountId,
             folder,
@@ -211,30 +231,34 @@ async function readMessage(message) {
     );
     $('reader').append(actions);
   }
-  $('reader').append(node('pre', result.text || 'Este mensaje no contiene texto legible.'));
-  if (result.truncated)
-    $('reader').append(node('p', 'El texto se ha recortado por su tamaño.', 'muted'));
+  $('reader').append(node('pre', result.text || msg('no_text')));
+  if (result.truncated) $('reader').append(node('p', msg('truncated'), 'muted'));
   if (result.attachments?.length) {
     const files = node('section', '', 'attachment-note');
-    files.append(node('h3', 'Adjuntos'));
+    files.append(node('h3', msg('attachments')));
     for (const file of result.attachments)
       files.append(
-        button(`Descargar ${file.filename} (${Math.ceil(file.size / 1024)} KB)`, async () => {
-          const attachment = await mail('attachment', {
-            accountId,
-            folder,
-            messageId: message.messageId,
-            ...(uidValidity ? { uidValidity } : {}),
-            index: file.index,
-          });
-          const bytes = Uint8Array.from(atob(attachment.contentBase64), (c) => c.charCodeAt(0));
-          const url = URL.createObjectURL(new Blob([bytes], { type: 'application/octet-stream' }));
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = attachment.filename;
-          link.click();
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
-        }),
+        button(
+          msg('download', { filename: file.filename, size: Math.ceil(file.size / 1024) }),
+          async () => {
+            const attachment = await mail('attachment', {
+              accountId,
+              folder,
+              messageId: message.messageId,
+              ...(uidValidity ? { uidValidity } : {}),
+              index: file.index,
+            });
+            const bytes = Uint8Array.from(atob(attachment.contentBase64), (c) => c.charCodeAt(0));
+            const url = URL.createObjectURL(
+              new Blob([bytes], { type: 'application/octet-stream' }),
+            );
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = attachment.filename;
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+          },
+        ),
       );
     $('reader').append(files);
   }
@@ -243,10 +267,8 @@ function accountDialog(account = null) {
   state.editing = account;
   const form = $('account-form');
   form.reset();
-  $('account-error').textContent = '';
-  $('account-form-title').textContent = account
-    ? 'Configuración de la cuenta'
-    : 'Conectar una cuenta';
+  setText($('account-error'), '');
+  setText($('account-form-title'), account ? msg('account_settings') : msg('connect_account'));
   $('remove-account').hidden = !account;
   if (account) {
     for (const key of ['label', 'email', 'senderName', 'replyTo'])
@@ -298,11 +320,11 @@ $('account-form').addEventListener('submit', async (e) => {
             ([k, v]) => k !== 'password' && state.editing[type][k] !== v,
           )
         )
-          throw new Error('Introduce la contraseña para guardar los cambios de conexión.');
+          throw new UiError('password_needed');
         continue;
       }
       if (!connection.password || !connection.host || !connection.username)
-        throw new Error('Completa servidor, usuario y contraseña de cada conexión habilitada.');
+        throw new UiError('connection_required');
       account[type] = connection;
     }
     const saved = state.editing
@@ -310,13 +332,13 @@ $('account-form').addEventListener('submit', async (e) => {
       : await api('/api/accounts', 'POST', account);
     form.reset();
     $('account-dialog').close();
-    notice('Cuenta guardada. Puedes probar la conexión.');
+    notice(msg('saved'));
     state.account = saved;
     await loadAccounts();
     await selectAccount(saved);
   } catch (error) {
-    if ($('account-dialog').open) $('account-error').textContent = error.message;
-    else notice(error.message, true);
+    if ($('account-dialog').open) setText($('account-error'), error.localized ?? msg('failed'));
+    else notice(error.localized ?? msg('failed'), true);
   } finally {
     submit.disabled = false;
   }
@@ -324,7 +346,7 @@ $('account-form').addEventListener('submit', async (e) => {
 on('add-account', () => accountDialog());
 on('edit-account', () => accountDialog(state.account));
 on('remove-account', async () => {
-  if (!confirm('¿Eliminar esta conexión? El correo permanecerá en tu proveedor.')) return;
+  if (!confirm(t('remove_confirm'))) return;
   await api(`/api/accounts/${state.editing.id}`, 'DELETE', { confirm: true });
   $('account-dialog').close();
   state.account = null;
@@ -333,34 +355,37 @@ on('remove-account', async () => {
   else {
     $('account-actions').hidden = true;
     $('mail-controls').hidden = true;
-    $('account-title').textContent = 'Empieza con una cuenta';
-    $('account-address').textContent = '';
+    setText($('account-title'), msg('start_account'));
+    setText($('account-address'), '');
     $('messages').replaceChildren();
     $('reader').replaceChildren();
   }
-  notice('Conexión eliminada.');
+  notice(msg('removed'));
 });
 on('verify', async () => {
   const result = await mail('verify', { accountId: state.account.id });
-  notice(`Conexión verificada: ${result.verified.join(', ')}.`);
+  notice(msg('verified', { protocols: result.verified.join(', ') }));
 });
 on('refresh', () => loadMessages());
 on('older', () => loadMessages(state.nextBefore));
 $('folder').addEventListener('change', () => {
   state.folder = $('folder').value;
   $('reader').replaceChildren();
-  loadMessages().catch((e) => notice(e.message, true));
+  loadMessages().catch((e) => notice(e.localized ?? msg('failed'), true));
 });
 on('create-folder', async () => {
-  const path = prompt('Nombre de la nueva carpeta:');
+  const path = prompt(t('folder_prompt'));
   if (path) {
     await mail('create-folder', { accountId: state.account.id, path });
     await selectAccount(state.account);
   }
 });
 on('compose', () => {
-  $('compose-error').textContent = '';
-  $('compose-from').textContent = `De: ${state.account.senderName} <${state.account.email}>`;
+  setText($('compose-error'), '');
+  setText(
+    $('compose-from'),
+    msg('from_value', { value: `${state.account.senderName} <${state.account.email}>` }),
+  );
   $('compose-dialog').showModal();
 });
 $('compose-form').addEventListener('submit', async (e) => {
@@ -381,13 +406,9 @@ $('compose-form').addEventListener('submit', async (e) => {
     });
     form.reset();
     $('compose-dialog').close();
-    notice(
-      result.rejected?.length
-        ? 'El servidor rechazó algunos destinatarios. Revisa el envío en tu proveedor.'
-        : 'El servidor aceptó el mensaje para su envío.',
-    );
+    notice(result.rejected?.length ? msg('partially_sent') : msg('sent'));
   } catch (error) {
-    $('compose-error').textContent = error.message;
+    setText($('compose-error'), error.localized ?? msg('failed'));
   } finally {
     submit.disabled = false;
   }
@@ -411,7 +432,26 @@ on('redeem', async () => {
   await loadAccounts();
   if (state.accounts[0]) await selectAccount(state.accounts[0]);
 });
+document.querySelectorAll('[data-language-picker]').forEach((picker) =>
+  picker.addEventListener('change', async (event) => {
+    try {
+      await changeLanguage(event.target.value);
+    } catch (error) {
+      event.target.value = language();
+      notice(error.localized ?? msg('language_failed'), true);
+    }
+  }),
+);
+document.querySelectorAll('input, textarea, select').forEach((field) => {
+  field.addEventListener('invalid', () => validateField(field));
+  field.addEventListener('input', () => {
+    field.setCustomValidity('');
+    delete field.dataset.validationError;
+  });
+});
+
 (async () => {
+  await initLanguage();
   const config = await api('/api/config');
   $('login').hidden = !config.hosted;
   $('local-help').hidden = config.hosted;
@@ -424,6 +464,6 @@ on('redeem', async () => {
     await loadAccounts();
     if (state.accounts[0]) await selectAccount(state.accounts[0]);
   } catch (error) {
-    if (!$('workspace').hidden) notice(error.message, true);
+    if (!$('workspace').hidden) notice(error.localized ?? msg('failed'), true);
   }
-})().catch((e) => notice(e.message, true));
+})().catch((e) => notice(e.localized ?? msg('failed'), true));

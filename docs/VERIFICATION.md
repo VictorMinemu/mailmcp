@@ -24,3 +24,9 @@ The browser fixture used fake accounts and synthetic MIME messages. No real emai
 The browser review also found and fixed handling of a new fragment login token in an already-open tab. A fresh document clears the previous identity’s UI and pending requests. Tokens are removed from the visible URL and explicitly redeemed; expired links are rejected.
 
 GitHub CI on the initial published commit passed on Node.js 22 and 24, including the container build: [initial CI run](https://github.com/VictorMinemu/mailmcp/actions/runs/34876484302).
+
+## Multilingual update — 2026-09-14
+
+English and Spanish passed type checking, all 20 automated tests, and a Docker image build. Added checks cover catalog completeness and placeholders, regional language negotiation, translated MCP descriptions/errors/prompts and web links, HTTP error language, and separate hosted clients using different languages.
+
+Browser checks with synthetic mail confirmed automatic language selection, switching without losing a populated draft, translated validation feedback and dates, and persistence after reload. Switching the message reader translated attachment actions while preserving the original message and filename. Downloaded `ejemplo.txt` still contained the original `Hola desde MailMCP` bytes. The compose dialog and its language selector were inspected at 390px width. No real email was sent.

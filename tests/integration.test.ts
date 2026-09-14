@@ -117,7 +117,7 @@ test('real stdio MCP handshake, tools, resources, prompts and one-time browser s
     });
     assert.match(JSON.stringify(prompt), /untrusted/);
     const link = new URL(parsed(await client.callTool({ name: 'web_open', arguments: {} })).url);
-    assert.equal(link.search, '');
+    assert.equal(link.searchParams.get('lang'), 'en');
     const token = new URLSearchParams(link.hash.slice(1)).get('token');
     assert.equal((await rawFetch(`${origin}/api/accounts`)).status, 401);
     assert.equal(
@@ -166,6 +166,14 @@ test('real stdio MCP handshake, tools, resources, prompts and one-time browser s
       (await rawFetch(`${origin}/`, { headers: { host: 'attacker.example' } })).status,
       403,
     );
+    const localized = await rawFetch(`${origin}/api/accounts`, {
+      headers: { 'accept-language': 'es-CO' },
+    });
+    assert.equal(localized.status, 401);
+    assert.equal(localized.headers.get('content-language'), 'es');
+    assert.equal((await localized.json()).message, 'Inicia sesión para continuar.');
+    assert.equal((await rawFetch(`${origin}/locales/es.json`)).status, 200);
+    assert.equal((await rawFetch(`${origin}/locales/fr.json`)).status, 404);
     const page = await rawFetch(origin);
     assert.match(page.headers.get('content-security-policy')!, /frame-ancestors 'none'/);
     assert.match(await page.text(), /MailMCP/);
@@ -221,7 +229,13 @@ test('hosted HTTP transport scopes every MCP request and web link to the OAuth s
       await client.connect(
         new StreamableHTTPClientTransport(new URL(`${base}/mcp`), {
           fetch: rawFetch,
-          requestInit: { headers: { host, authorization: `Bearer ${token}` } },
+          requestInit: {
+            headers: {
+              host,
+              authorization: `Bearer ${token}`,
+              'accept-language': token === 'bob-token' ? 'es' : 'en',
+            },
+          },
         }),
       );
     const created = parsed(await alice.callTool({ name: 'accounts_add', arguments: sample }));
@@ -231,6 +245,7 @@ test('hosted HTTP transport scopes every MCP request and web link to the OAuth s
       arguments: { accountId: created.id, changes: { label: 'Stolen' } },
     });
     assert.equal(denied.isError, true);
+    assert.equal(parsed(denied).message, 'Cuenta no encontrada.');
     const link = new URL(parsed(await bob.callTool({ name: 'web_open', arguments: {} })).url),
       token = new URLSearchParams(link.hash.slice(1)).get('token');
     const redeemed = await rawFetch(`${base}/api/redeem`, {

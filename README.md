@@ -76,6 +76,10 @@ Provide a generated master key and the remaining environment values, configure t
 
 Downloads are limited to **5 MB per attachment** in messages of at most **10 MB**. The server does not execute files, save them into arbitrary client paths or scan them for malware. Reading a message or attachment does not mark it as seen. See [the tool reference](docs/MCP.md) for exact inputs.
 
+## Languages
+
+The web client supports **English and Spanish**, with browser-language detection, a saved preference and selectors inside forms. MCP descriptions, prompts and application errors support the same languages: set `MAILMCP_LANGUAGE=es` for stdio or send `Accept-Language: es` over HTTP. `web_open` can take `{ "language": "es" }`. Email content and attachments retain their original language and bytes. See [language configuration and contribution instructions](docs/LANGUAGES.md).
+
 ## Development
 
 ```sh

@@ -1,3 +1,4 @@
+import { negotiateLanguage } from './i18n.js';
 import { resolve } from 'node:path';
 import { AppError } from './errors.js';
 
@@ -43,6 +44,7 @@ export function readConfig(env = process.env) {
     throw new AppError('CONFIG', 'Hosted mode requires HTTPS OIDC_ISSUER and OIDC_CLIENT_ID.');
   return {
     mode,
+    locale: negotiateLanguage(env.MAILMCP_LANGUAGE),
     port,
     origin: origin.origin,
     hostname: origin.host,

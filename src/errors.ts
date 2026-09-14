@@ -1,4 +1,5 @@
 import { ZodError } from 'zod';
+import { translate, type Locale } from './i18n.js';
 
 export class AppError extends Error {
   constructor(
@@ -10,7 +11,7 @@ export class AppError extends Error {
   }
 }
 
-export function publicError(error: unknown) {
+function errorDetails(error: unknown) {
   if (error instanceof AppError) return { code: error.code, message: error.message };
   if (error instanceof ZodError)
     return {
@@ -22,5 +23,14 @@ export function publicError(error: unknown) {
     code: 'OPERATION_FAILED',
     message:
       'Operation failed. Check configuration, connectivity and credentials. A failed send may still have been accepted; check before retrying.',
+  };
+}
+
+export function publicError(error: unknown, locale: Locale = 'en') {
+  const result = errorDetails(error);
+  return {
+    code: result.code,
+    message: translate(locale, 'errors', result.message),
+    messageKey: result.message,
   };
 }

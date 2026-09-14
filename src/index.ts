@@ -30,7 +30,7 @@ try {
   });
   const stdio =
     config.mode === 'local'
-      ? serveStdio(() => createMcp(services, 'local-owner'), {
+      ? serveStdio(() => createMcp(services, 'local-owner', config.locale), {
           onerror: () => {
             process.stderr.write('MCP transport error\n');
           },

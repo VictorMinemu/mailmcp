@@ -21,6 +21,8 @@ Tools are available through local stdio and authenticated hosted HTTP. Every ope
 | `web_open`             | One-use URL granting the MCP user's web session                                            |
 | `web_revoke_sessions`  | Revoke that user's web sessions and pending links                                          |
 
+Descriptions, prompts and application errors support English and Spanish. Use `MAILMCP_LANGUAGE` in stdio or `Accept-Language` in HTTP; see [languages](LANGUAGES.md). `web_open` accepts optional `language: "en" | "es"`. Tool identifiers and JSON field names remain unchanged.
+
 Use `tools/list` for the authoritative JSON input schemas. Credentials are validated, encrypted and never echoed by account tools. Adding them through `accounts_add` can still put them in your MCP host's transcript; prefer entering them through `web_open`.
 
 ## Connect an account

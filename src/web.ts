@@ -1,3 +1,4 @@
+import { negotiateLanguage } from './i18n.js';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { createMcpHandler } from '@modelcontextprotocol/server';
@@ -51,6 +52,8 @@ export function createWeb(config: Config, services: Services, identity?: Identit
     '/favicon.svg': ['favicon.svg', 'image/svg+xml'],
     '/': ['index.html', 'text/html'],
     '/app.js': ['app.js', 'text/javascript'],
+    '/i18n.js': ['i18n.js', 'text/javascript'],
+    '/language.js': ['language.js', 'text/javascript'],
     '/style.css': ['style.css', 'text/css'],
   };
   const handler = createMcpHandler(
@@ -58,11 +61,21 @@ export function createWeb(config: Config, services: Services, identity?: Identit
       const owner = ctx.authInfo?.extra?.owner;
       if (typeof owner !== 'string')
         throw new AppError('UNAUTHORIZED', 'Authentication required.', 401);
-      return createMcp(services, owner);
+      return createMcp(
+        services,
+        owner,
+        negotiateLanguage(
+          ctx.requestInfo?.headers.get('accept-language') ?? undefined,
+          config.locale,
+        ),
+      );
     },
     { maxSubscriptions: 0 },
   );
   const server = createServer(async (req, res) => {
+    const locale = negotiateLanguage(req.headers['accept-language'], config.locale);
+    res.setHeader('content-language', locale);
+    res.setHeader('vary', 'Accept-Language');
     res.setHeader('cache-control', 'no-store');
     res.setHeader('x-content-type-options', 'nosniff');
     res.setHeader('referrer-policy', 'no-referrer');
@@ -225,9 +238,17 @@ export function createWeb(config: Config, services: Services, identity?: Identit
         }
         throw new AppError('NOT_FOUND', 'Endpoint not found.', 404);
       }
+      if (req.method === 'GET' && /^\/locales\/(en|es)\.json$/.test(path)) {
+        const file = await readFile(new URL(`..${path}`, import.meta.url));
+        res.setHeader('content-language', path.includes('/es.') ? 'es' : 'en');
+        res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+        res.end(file);
+        return;
+      }
       const asset = assets[path];
       if (req.method === 'GET' && asset) {
         const file = await readFile(new URL(`../web/${asset[0]}`, import.meta.url));
+        if (path === '/') res.setHeader('content-language', 'en');
         res.writeHead(200, { 'content-type': `${asset[1]}; charset=utf-8` });
         res.end(file);
         return;
@@ -245,7 +266,7 @@ export function createWeb(config: Config, services: Services, identity?: Identit
           'www-authenticate',
           `Bearer resource_metadata="${config.origin}/.well-known/oauth-protected-resource/mcp", scope="${config.scope}"`,
         );
-      json(res, publicError(error), status);
+      json(res, publicError(error, locale), status);
     }
   });
   server.requestTimeout = 60_000;

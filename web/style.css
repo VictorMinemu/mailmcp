@@ -535,3 +535,37 @@ legend {
     padding: 12px 18px;
   }
 }
+
+.language-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+.language-picker select {
+  width: auto;
+  margin: 0;
+}
+#logout {
+  margin-left: 0;
+}
+@media (max-width: 650px) {
+  .language-picker > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .language-picker select {
+    padding: 8px;
+  }
+  .masthead {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 72px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+}

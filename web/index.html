@@ -1,79 +1,123 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MailMCP — Tu correo, conectado</title>
+    <title data-i18n="title">MailMCP — Your mail, connected</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/style.css" />
-    <script src="/app.js" defer></script>
+    <script type="module" src="/app.js"></script>
   </head>
   <body>
     <header class="masthead">
-      <a href="/" class="brand" aria-label="MailMCP inicio"
+      <a href="/" class="brand" aria-label="MailMCP home" data-i18n-aria-label="home"
         ><span class="stamp" aria-hidden="true">m</span>MailMCP</a
-      ><span class="tagline">Tu correo, conectado.</span
-      ><button id="logout" class="quiet" hidden>Cerrar sesión</button>
+      ><span class="tagline"><span data-i18n="tagline">Your mail, connected.</span></span
+      ><label class="language-picker"
+        ><span data-i18n="language">Language</span
+        ><select id="language" data-language-picker>
+          <option value="en">English</option>
+          <option value="es">Español</option>
+        </select></label
+      ><button id="logout" class="quiet" hidden><span data-i18n="logout">Sign out</span></button>
     </header>
     <p id="notice" role="status" aria-live="polite" hidden></p>
     <main id="welcome" class="welcome">
       <div class="postmark" aria-hidden="true">@</div>
-      <h1>Un lugar para<br />tus cuentas de correo.</h1>
-      <p>Conecta el correo que ya usas. Consúltalo aquí o trabaja con él desde tu asistente.</p>
-      <a id="login" class="button" href="/auth/login" hidden>Iniciar sesión</a
-      ><button id="redeem" hidden>Abrir mi sesión</button>
-      <p id="local-help" class="muted" hidden>
-        Pide a tu asistente que abra MailMCP con la herramienta <code>web_open</code>.
+      <h1>
+        <span data-i18n="welcome_a">One place for</span><br /><span data-i18n="welcome_b"
+          >your email accounts.</span
+        >
+      </h1>
+      <p>
+        <span data-i18n="welcome_text"
+          >Connect the email you already use. Read it here or work with it through your
+          assistant.</span
+        >
       </p>
-      <p class="footnote">Conectamos tus cuentas existentes. No ofrecemos direcciones de correo.</p>
+      <a id="login" class="button" href="/auth/login" hidden
+        ><span data-i18n="login">Sign in</span></a
+      ><button id="redeem" hidden><span data-i18n="redeem">Open my session</span></button>
+      <p id="local-help" class="muted" hidden>
+        <span data-i18n="local_help">Ask your assistant to open MailMCP using</span
+        ><code>web_open</code>.
+      </p>
+      <p class="footnote">
+        <span data-i18n="existing_only"
+          >We connect your existing accounts. We do not provide email addresses.</span
+        >
+      </p>
     </main>
     <main id="workspace" class="workspace" hidden>
       <aside>
         <div class="section-heading">
-          <h2>Mis cuentas</h2>
-          <button id="add-account" class="small" aria-label="Añadir cuenta">+ Añadir</button>
+          <h2><span data-i18n="accounts">My accounts</span></h2>
+          <button
+            id="add-account"
+            class="small"
+            aria-label="Add account"
+            data-i18n-aria-label="add_account"
+          >
+            <span data-i18n="add">+ Add</span>
+          </button>
         </div>
-        <nav id="accounts" aria-label="Cuentas de correo"></nav>
-        <p class="aside-note">Tus conexiones se guardan cifradas.</p>
+        <nav id="accounts" aria-label="Email accounts" data-i18n-aria-label="accounts_nav"></nav>
+        <p class="aside-note">
+          <span data-i18n="encrypted">Your connections are stored encrypted.</span>
+        </p>
       </aside>
       <section class="mailspace">
         <div class="toolbar">
           <div>
-            <h1 id="account-title">Empieza con una cuenta</h1>
-            <p id="account-address" class="muted">Conecta un buzón existente para ver tu correo.</p>
+            <h1 id="account-title"><span data-i18n="start_account">Start with an account</span></h1>
+            <p id="account-address" class="muted">
+              <span data-i18n="connect_hint">Connect an existing mailbox to see your mail.</span>
+            </p>
           </div>
           <div class="actions" id="account-actions" hidden>
-            <button id="verify" class="quiet">Probar conexión</button
-            ><button id="edit-account" class="quiet">Configuración</button
-            ><button id="compose">Redactar</button>
+            <button id="verify" class="quiet">
+              <span data-i18n="verify">Test connection</span></button
+            ><button id="edit-account" class="quiet">
+              <span data-i18n="settings">Settings</span></button
+            ><button id="compose"><span data-i18n="compose">Compose</span></button>
           </div>
         </div>
         <div id="mail-controls" class="mail-controls" hidden>
           <label
-            >Carpeta
-            <select id="folder">
+            ><span data-i18n="folder">Folder</span
+            ><select id="folder">
               <option>INBOX</option>
             </select></label
-          ><button id="refresh" class="quiet">Actualizar</button
-          ><button id="create-folder" class="quiet">Nueva carpeta</button>
+          ><button id="refresh" class="quiet"><span data-i18n="refresh">Refresh</span></button
+          ><button id="create-folder" class="quiet">
+            <span data-i18n="new_folder">New folder</span>
+          </button>
         </div>
         <div class="mail-grid">
-          <section class="message-column" aria-label="Lista de mensajes">
+          <section
+            class="message-column"
+            aria-label="Message list"
+            data-i18n-aria-label="message_list"
+          >
             <div id="messages" class="messages">
               <div class="empty">
-                <h2>Tu correo empieza aquí.</h2>
+                <h2><span data-i18n="mail_starts">Your mail starts here.</span></h2>
                 <p>
-                  Añade una cuenta IMAP, POP3 o SMTP. Necesitarás los datos de conexión de tu
-                  proveedor.
+                  <span data-i18n="add_hint"
+                    >Add an IMAP, POP3 or SMTP account. You will need your provider’s connection
+                    settings.</span
+                  >
                 </p>
               </div>
             </div>
-            <button id="older" class="quiet" hidden>Mensajes anteriores</button>
+            <button id="older" class="quiet" hidden>
+              <span data-i18n="older">Older messages</span>
+            </button>
           </section>
           <article id="reader" class="reader">
             <div class="empty">
-              <h2>Espacio para leer.</h2>
-              <p>Selecciona un mensaje para abrirlo.</p>
+              <h2><span data-i18n="reading_space">Room to read.</span></h2>
+              <p><span data-i18n="select_open">Select a message to open it.</span></p>
             </div>
           </article>
         </div>
@@ -82,130 +126,190 @@
     <dialog id="account-dialog">
       <form id="account-form">
         <div class="dialog-heading">
-          <h2 id="account-form-title">Conectar una cuenta</h2>
-          <button type="button" class="quiet close-dialog" aria-label="Cerrar">×</button>
+          <h2 id="account-form-title">
+            <span data-i18n="connect_account">Connect an account</span>
+          </h2>
+          <label class="language-picker"
+            ><span data-i18n="language">Language</span
+            ><select data-language-picker>
+              <option value="en">English</option>
+              <option value="es">Español</option>
+            </select></label
+          ><button
+            type="button"
+            class="quiet close-dialog"
+            aria-label="Close"
+            data-i18n-aria-label="close"
+          >
+            ×
+          </button>
         </div>
-        <p>Usa los datos de una cuenta que ya existe en tu proveedor.</p>
+        <p>
+          <span data-i18n="account_hint"
+            >Use the settings for an account that already exists with your provider.</span
+          >
+        </p>
         <div class="form-grid">
           <label
-            >Nombre de la cuenta<input
+            ><span data-i18n="account_label">Account name</span
+            ><input
               name="label"
               required
               maxlength="256"
-              placeholder="Trabajo" /></label
+              placeholder="Work"
+              data-i18n-placeholder="work" /></label
           ><label
-            >Dirección de correo<input
+            ><span data-i18n="email">Email address</span
+            ><input
               name="email"
               type="email"
               required
-              placeholder="tu@ejemplo.com" /></label
+              placeholder="you@example.com"
+              data-i18n-placeholder="email_example" /></label
           ><label
-            >Nombre del remitente<input
+            ><span data-i18n="sender">Sender name</span
+            ><input
               name="senderName"
               required
               maxlength="256"
-              placeholder="Tu nombre" /></label
-          ><label>Responder a (opcional)<input name="replyTo" type="email" /></label>
+              placeholder="Your name"
+              data-i18n-placeholder="your_name" /></label
+          ><label
+            ><span data-i18n="reply_to">Reply-To (optional)</span
+            ><input name="replyTo" type="email"
+          /></label>
         </div>
         <fieldset>
-          <legend>Correo entrante</legend>
+          <legend><span data-i18n="incoming">Incoming mail</span></legend>
           <div class="form-grid">
             <label
-              >Protocolo<select name="incomingProtocol">
+              ><span data-i18n="protocol">Protocol</span
+              ><select name="incomingProtocol">
                 <option value="imap">IMAP</option>
                 <option value="pop3">POP3</option>
-                <option value="none">Sin correo entrante</option>
+                <option value="none" data-i18n="no_incoming">No incoming mail</option>
               </select></label
             ><label
-              >Seguridad<select name="incomingSecurity">
+              ><span data-i18n="security">Security</span
+              ><select name="incomingSecurity">
                 <option value="tls">TLS</option>
-                <option value="starttls">STARTTLS (solo IMAP)</option>
+                <option value="starttls" data-i18n="starttls_imap">STARTTLS (IMAP only)</option>
               </select></label
             ><label
-              >Servidor<input
+              ><span data-i18n="host">Server</span
+              ><input
                 name="incomingHost"
-                placeholder="imap.ejemplo.com"
+                placeholder="imap.example.com"
+                data-i18n-placeholder="imap_example"
                 autocomplete="off" /></label
             ><label
-              >Puerto<input
-                name="incomingPort"
-                type="number"
-                min="1"
-                max="65535"
-                value="993" /></label
-            ><label>Usuario<input name="incomingUsername" autocomplete="off" /></label
+              ><span data-i18n="port">Port</span
+              ><input name="incomingPort" type="number" min="1" max="65535" value="993" /></label
             ><label
-              >Contraseña de aplicación<input
-                name="incomingPassword"
-                type="password"
-                autocomplete="new-password"
+              ><span data-i18n="username">Username</span
+              ><input name="incomingUsername" autocomplete="off" /></label
+            ><label
+              ><span data-i18n="password">App password</span
+              ><input name="incomingPassword" type="password" autocomplete="new-password"
             /></label>
           </div>
         </fieldset>
         <fieldset>
           <legend>
             <label class="inline"
-              ><input name="smtpEnabled" type="checkbox" checked /> Correo saliente (SMTP)</label
+              ><input name="smtpEnabled" type="checkbox" checked /><span data-i18n="outgoing"
+                >Outgoing mail (SMTP)</span
+              ></label
             >
           </legend>
           <div class="form-grid">
             <label
-              >Servidor<input
+              ><span data-i18n="host">Server</span
+              ><input
                 name="smtpHost"
-                placeholder="smtp.ejemplo.com"
+                placeholder="smtp.example.com"
+                data-i18n-placeholder="smtp_example"
                 autocomplete="off" /></label
             ><label
-              >Puerto<input name="smtpPort" type="number" min="1" max="65535" value="465" /></label
+              ><span data-i18n="port">Port</span
+              ><input name="smtpPort" type="number" min="1" max="65535" value="465" /></label
             ><label
-              >Seguridad<select name="smtpSecurity">
+              ><span data-i18n="security">Security</span
+              ><select name="smtpSecurity">
                 <option value="tls">TLS</option>
                 <option value="starttls">STARTTLS</option>
               </select></label
-            ><label>Usuario<input name="smtpUsername" autocomplete="off" /></label
             ><label
-              >Contraseña de aplicación<input
-                name="smtpPassword"
-                type="password"
-                autocomplete="new-password"
+              ><span data-i18n="username">Username</span
+              ><input name="smtpUsername" autocomplete="off" /></label
+            ><label
+              ><span data-i18n="password">App password</span
+              ><input name="smtpPassword" type="password" autocomplete="new-password"
             /></label>
           </div>
         </fieldset>
         <p class="muted">
-          Al editar, deja la contraseña vacía para conservar una conexión sin cambios. Cambiar la
-          dirección aquí no renombra tu buzón en el proveedor.
+          <span data-i18n="edit_hint"
+            >When editing, leave the password blank to keep an unchanged connection. Changing the
+            address here does not rename your mailbox at the provider.</span
+          >
         </p>
         <p id="account-error" class="form-error" role="alert"></p>
         <div class="dialog-actions">
-          <button type="button" id="remove-account" class="danger" hidden>Eliminar conexión</button
-          ><button type="submit">Guardar cuenta</button>
+          <button type="button" id="remove-account" class="danger" hidden>
+            <span data-i18n="remove">Remove connection</span></button
+          ><button type="submit"><span data-i18n="save">Save account</span></button>
         </div>
       </form>
     </dialog>
     <dialog id="compose-dialog">
       <form id="compose-form">
         <div class="dialog-heading">
-          <h2>Nuevo mensaje</h2>
-          <button type="button" class="quiet close-dialog" aria-label="Cerrar">×</button>
+          <h2><span data-i18n="new_message">New message</span></h2>
+          <label class="language-picker"
+            ><span data-i18n="language">Language</span
+            ><select data-language-picker>
+              <option value="en">English</option>
+              <option value="es">Español</option>
+            </select></label
+          ><button
+            type="button"
+            class="quiet close-dialog"
+            aria-label="Close"
+            data-i18n-aria-label="close"
+          >
+            ×
+          </button>
         </div>
         <p id="compose-from" class="muted"></p>
         <label
-          >Para<input
+          ><span data-i18n="to">To</span
+          ><input
             name="to"
             type="email"
             multiple
             required
-            placeholder="destinatario@ejemplo.com" /></label
-        ><label>Asunto<input name="subject" required maxlength="256" /></label
+            placeholder="recipient@example.com"
+            data-i18n-placeholder="recipient_example" /></label
         ><label
-          >Mensaje<textarea name="text" rows="12" required maxlength="100000"></textarea></label
+          ><span data-i18n="subject">Subject</span
+          ><input name="subject" required maxlength="256" /></label
+        ><label
+          ><span data-i18n="body">Message</span
+          ><textarea name="text" rows="12" required maxlength="100000"></textarea></label
         ><label class="inline"
-          ><input name="confirm" type="checkbox" required /> He revisado los destinatarios y el
-          mensaje.</label
+          ><input name="confirm" type="checkbox" required /><span data-i18n="reviewed"
+            >I have reviewed the recipients and message.</span
+          ></label
         >
         <p id="compose-error" class="form-error" role="alert"></p>
-        <div class="dialog-actions"><button type="submit">Enviar mensaje</button></div>
+        <div class="dialog-actions">
+          <button type="submit"><span data-i18n="send">Send message</span></button>
+        </div>
       </form>
     </dialog>
-    <footer>MailMCP <span>Software abierto para tu correo.</span></footer>
+    <footer>
+      MailMCP <span><span data-i18n="footer">Open-source software for your mail.</span></span>
+    </footer>
   </body>
 </html>

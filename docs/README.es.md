@@ -32,3 +32,7 @@ Límites iniciales: mensajes de hasta 10 MB y adjuntos individuales de hasta 5 M
 La base para alojarlo está incluida: Docker, Caddy, autenticación OIDC/OAuth y aislamiento entre usuarios. Sigue [la guía de alojamiento](HOSTING.md). Para activarlo hacen falta el dominio, el alojamiento y la configuración del proveedor de identidad. El repositorio por sí solo no publica un servicio web.
 
 Las invitaciones y cuentas compartidas quedan para versiones posteriores. El cifrado es del lado del servidor: quien administra la clave maestra puede descifrar las credenciales. La versión inicial tiene pruebas automatizadas; falta validar la configuración concreta con proveedores reales antes de abrir un servicio al público.
+
+## Idiomas
+
+La web está disponible en español e inglés, con detección del idioma del navegador y selector que guarda tu preferencia. Puedes cambiarlo dentro de los formularios sin perder lo escrito. El MCP admite `MAILMCP_LANGUAGE=es` en stdio y `Accept-Language: es` en HTTP; `web_open` permite elegir `language`. Los correos y adjuntos mantienen su contenido original. [Más información](LANGUAGES.md).
