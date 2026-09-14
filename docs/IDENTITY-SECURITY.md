@@ -1,0 +1,23 @@
+# Identity image review — 2026-09-14
+
+Trivy 0.74.0 scanned the built identity images, including Java dependencies. The PostgreSQL image initially had 31 high/critical findings; upgrading Alpine packages and removing the unused `gosu` binary reduced that count to zero. The application runtime's high/critical scan also passed.
+
+The Keycloak 26.7.3 image reported three findings. They are recorded here without claiming a clean scan or suppressing them globally:
+
+| Finding                                 | Assessment for this deployment                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CVE-2026-22020, OpenJDK, high           | The CVE was rejected by the assigning authority. The scanner's own description says it was rejected; [Red Hat's tracker](https://bugzilla.redhat.com/show_bug.cgi?id=2460045) confirms this.                                                                                                                                                                                                                                                                                                                                                                        |
+| CVE-2025-59250, SQL Server JDBC, high   | The scanned JAR is `mssql-jdbc-13.2.1.jre11.jar`, a fixed version listed by the scanner and [Microsoft's changelog](https://github.com/microsoft/mssql-jdbc/blob/main/CHANGELOG.md). Trivy normalized the embedded version to `13.2.1`, causing a version mismatch. This stack uses PostgreSQL and does not configure SQL Server.                                                                                                                                                                                                                                   |
+| CVE-2026-75595, Netty handler, critical | The affected library is present. [The Netty advisory](https://github.com/netty/netty/security/advisories/GHSA-c4c3-7fpv-j4q5) concerns inbound TLS/SNI routing and per-SNI mutual-TLS enforcement. Here Keycloak only listens on internal HTTP, with TLS terminated by Nginx/Cloudflare and user authentication enforced through OIDC. The affected TLS path is not exposed by this configuration. Upgrade Keycloak when its distribution includes the fixed Netty version; reassess immediately if enabling Keycloak TLS, SNI or certificate-based authentication. |
+
+This is a deployment-specific assessment, not a statement that the Keycloak image contains no vulnerable components. No custom replacement of vendor Java libraries or unreviewed development release was used to make the scanner report zero.
+
+## Validated boundaries
+
+- Production mode with a private PostgreSQL network, no published identity/database ports, non-root containers, dropped capabilities and read-only roots.
+- Public registration isolated from the administrative master realm; Spanish and English login pages.
+- PKCE S256, exact redirect URIs, five-minute access tokens, explicit user consent and disabled password grants for application clients.
+- The MCP scope includes both the exact resource audience and a stable `sub` mapper. A real authorization-code login identified the missing subject mapper during validation; it was corrected without relaxing application token verification.
+- Temporary bootstrap administrator replaced with a separate permanent operator and deleted.
+
+Service notification SMTP, email verification/recovery, operator MFA, backup recovery drills and access restrictions for shared infrastructure administration remain operational responsibilities. Live mail credentials are needed for provider interoperability checks; synthetic account tests do not establish successful mail delivery.
