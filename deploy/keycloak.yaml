@@ -1,0 +1,94 @@
+services:
+  database:
+    build:
+      context: ./keycloak
+      dockerfile: Postgres.Dockerfile
+    image: mailmcp-postgres:local
+    pull_policy: build
+    restart: unless-stopped
+    user: postgres
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${MAILMCP_IDENTITY_DB_PASSWORD:?Set the database password}
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=scram-sha-256
+    volumes:
+      - identity_data:/var/lib/postgresql/data
+    tmpfs:
+      - /var/run/postgresql:uid=70,gid=70,mode=0700
+      - /tmp:uid=70,gid=70,mode=0700
+    networks:
+      - database
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+    pids_limit: 100
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U keycloak -d keycloak']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: json-file
+      options: { max-size: 10m, max-file: '3' }
+  keycloak:
+    build: ./keycloak
+    image: mailmcp-keycloak:local
+    pull_policy: build
+    command: [start, --optimized, --import-realm]
+    restart: unless-stopped
+    stop_grace_period: 30s
+    environment:
+      KC_DB_URL: jdbc:postgresql://database:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${MAILMCP_IDENTITY_DB_PASSWORD:?Set the database password}
+      KC_HOSTNAME: ${MAILMCP_IDENTITY_URL:-https://auth.mailmcp.org}
+      KC_HTTP_ENABLED: 'true'
+      KC_PROXY_HEADERS: xforwarded
+      KC_PROXY_TRUSTED_ADDRESSES: ${MAILMCP_PROXY_CIDR:-172.21.0.0/16}
+      KC_HTTP_POOL_MAX_THREADS: '50'
+      KC_DB_POOL_MAX_SIZE: '20'
+      KC_CACHE: local
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${MAILMCP_IDENTITY_ADMIN_USER:-bootstrap-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${MAILMCP_IDENTITY_ADMIN_PASSWORD:-}
+      MAILMCP_PUBLIC_URL: ${MAILMCP_PUBLIC_URL:-https://mailmcp.org}
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      database:
+      proxy:
+        aliases: [mailmcp-keycloak]
+    expose: ['8080']
+    read_only: true
+    tmpfs:
+      - /tmp:uid=1000,gid=0,mode=0700
+      - /opt/keycloak/data/tmp:uid=1000,gid=0,mode=0700
+      - /opt/keycloak/data/transaction-logs:uid=1000,gid=0,mode=0700
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 1536m
+    cpus: 2
+    pids_limit: 256
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -ec
+        - "exec 3<>/dev/tcp/127.0.0.1/9000; printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3; grep -q '200 OK' <&3"
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
+    logging:
+      driver: json-file
+      options: { max-size: 10m, max-file: '3' }
+volumes:
+  identity_data:
+networks:
+  database:
+    internal: true
+  proxy:
+    external: true
+    name: ${MAILMCP_PROXY_NETWORK:-nginx-proxy-manager_default}

@@ -15,6 +15,8 @@ In Portainer, create an administrator-owned stack named `mailmcp`, using this re
 
 Before deploying, confirm the named proxy network exists and the repository revision has passed CI. One MailMCP process must own the data volume. See the vault lock/recovery limitations in [Hosting](HOSTING.md).
 
+If you need an identity provider, deploy [the dedicated Keycloak stack](KEYCLOAK.md) first.
+
 Create a Cloudflare proxied A record for the domain pointing to the server. In Nginx Proxy Manager create the domain host pointing to `http://mailmcp:3210`, disable asset caching, and paste [the host configuration](../deploy/nginx-proxy-manager.conf). Forward the original Host header. Obtain a domain certificate and enable Force SSL. Set Cloudflare SSL/TLS mode to **Full (strict)** so the origin certificate is verified; Flexible mode is unsuitable. Keep cache rules from caching `/api/`, `/mcp`, `/auth/` or HTML containing authentication state. Configure edge rate limits for login and API traffic without challenging legitimate MCP clients with browser-only CAPTCHA flows.
 
 Verify HTTPS, `/healthz`, the unauthenticated 401 from `/api/accounts` and `/mcp`, and OAuth metadata before creating mail connections. Then perform the two-user and real-client launch checks in [Hosting](HOSTING.md). A healthy container alone does not demonstrate working user authentication.
