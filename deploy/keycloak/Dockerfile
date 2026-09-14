@@ -5,5 +5,6 @@ RUN /opt/keycloak/bin/kc.sh build
 FROM quay.io/keycloak/keycloak:26.7.3
 COPY --from=build /opt/keycloak/ /opt/keycloak/
 COPY --chown=1000:0 mailmcp-realm.json /opt/keycloak/data/import/mailmcp-realm.json
+COPY --chown=1000:0 --chmod=755 entrypoint.sh /opt/keycloak/bin/mailmcp-entrypoint.sh
 USER 1000:0
-ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]
+ENTRYPOINT ["/opt/keycloak/bin/mailmcp-entrypoint.sh"]
