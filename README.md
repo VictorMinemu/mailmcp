@@ -2,9 +2,9 @@
 
 Connect existing email accounts to AI assistants through MCP, and manage the same accounts in a web client.
 
-MailMCP is open-source software for self-hosting or running a hosted service on your own domain. It **does not sell, provision or host email addresses**. Users bring their own IMAP, POP3 and SMTP accounts.
+MailMCP is open-source software with a **free hosted service at [mailmcp.org](https://mailmcp.org/)** and full support for self-hosting on your own machine or domain. It **does not sell, provision or host email addresses**. Users bring their own IMAP, POP3 and SMTP accounts.
 
-**Status:** initial 0.1 implementation. Automated tests cover the core security boundaries and MCP flows; live mail-provider and identity-provider interoperability still needs deployment-specific validation. This repository is not an announcement of an already-running public service.
+**Status:** initial 0.1 implementation, running in production at [mailmcp.org](https://mailmcp.org/). Automated tests cover the core security boundaries and MCP flows; interoperability with additional mail providers and MCP clients is validated as they are used.
 
 [Guía en español](docs/README.es.md) · [Hosting](docs/HOSTING.md) · [Security](SECURITY.md) · [MCP tools](docs/MCP.md) · [Contributing](CONTRIBUTING.md)
 
@@ -19,6 +19,12 @@ MailMCP is open-source software for self-hosting or running a hosted service on 
 - Tools, account/capability resources and a drafting prompt using the official MCP TypeScript SDK.
 - Encrypted account storage, isolated user ownership, restricted network destinations and ephemeral browser sessions.
 - Local stdio mode and hosted HTTP MCP with OAuth access-token validation and OIDC web login.
+
+## Free hosted service
+
+Anyone can use MailMCP at [https://mailmcp.org/](https://mailmcp.org/) at no cost: no card, no trial, no paid tier. Create an account with the identity provider, connect your existing IMAP, POP3 or SMTP accounts in the browser, and point any MCP client at `https://mailmcp.org/mcp`; the client discovers the OAuth authorization server through the published protected-resource metadata and signs in with the same identity.
+
+The hosted service runs this repository's code under the same rules as a self-hosted instance: mail is fetched on demand and never written to disk, there is no access or body logging, and only encrypted connection settings are stored. Removing a connection deletes its credentials. The operator holds the master key, so it is not end-to-end encryption; read the [security policy](SECURITY.md) for the exact threat model and self-host if you need to hold the key yourself.
 
 ## Local quick start
 
@@ -76,6 +82,10 @@ Provide a generated master key and the remaining environment values, configure t
 
 Downloads are limited to **5 MB per attachment** in messages of at most **10 MB**. The server does not execute files, save them into arbitrary client paths or scan them for malware. Reading a message or attachment does not mark it as seen. See [the tool reference](docs/MCP.md) for exact inputs.
 
+## Landing page and discoverability
+
+The root page is a public, English-first landing page describing the zero-mail-retention model, the free hosted service and self-hosting; the same document becomes the mail client after login. Sign-up buttons link to `/auth/login` and are shown only in hosted mode, where the identity provider handles registration. It ships with a canonical URL and Open Graph tags bound to `MAILMCP_PUBLIC_URL`, Schema.org JSON-LD (software, source code and FAQ), `/robots.txt`, `/sitemap.xml` and `/llms.txt` for search engines and AI assistants. All landing copy is translated through the same `data-i18n` catalogs as the client, and every animation respects `prefers-reduced-motion`. The content security policy still forbids inline scripts, inline styles and third-party assets, so the page loads no web fonts or analytics.
+
 ## Languages
 
 The web client supports **English and Spanish**, with browser-language detection, a saved preference and selectors inside forms. MCP descriptions, prompts and application errors support the same languages: set `MAILMCP_LANGUAGE=es` for stdio or send `Accept-Language: es` over HTTP. `web_open` can take `{ "language": "es" }`. Email content and attachments retain their original language and bytes. See [language configuration and contribution instructions](docs/LANGUAGES.md).
@@ -91,6 +101,6 @@ npm run dev
 
 ## Current boundaries
 
-Single process with an encrypted file vault; no horizontal replicas. Incoming mail is fetched on demand, not synchronized or persisted. Sending does not append a copy to IMAP Sent (some SMTP providers do this themselves). No automatic retry of ambiguous SMTP failures. No HTML rendering, attachment uploads, mail-provider OAuth token refresh, sharing or invitations. No public demo is configured yet.
+Single process with an encrypted file vault; no horizontal replicas. Incoming mail is fetched on demand, not synchronized or persisted. Sending does not append a copy to IMAP Sent (some SMTP providers do this themselves). No automatic retry of ambiguous SMTP failures. No HTML rendering, attachment uploads, mail-provider OAuth token refresh, sharing or invitations. The hosted service at mailmcp.org is a single-instance deployment.
 
 See [the roadmap](docs/ROADMAP.md). MIT licensed.

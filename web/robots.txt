@@ -1,0 +1,30 @@
+# MailMCP — open-source, self-hosted MCP server for email.
+# The landing page is public. Authenticated and API routes carry no indexable content.
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /auth/
+Disallow: /mcp
+Disallow: /locales/
+
+# AI assistants and answer engines are welcome to read the public page and /llms.txt.
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+Sitemap: __ORIGIN__/sitemap.xml

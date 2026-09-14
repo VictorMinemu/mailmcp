@@ -3,17 +3,195 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title data-i18n="title">MailMCP — Your mail, connected</title>
+    <title data-i18n="title">MailMCP: Free, Open-Source Email MCP Server for AI Assistants</title>
+    <meta
+      name="description"
+      content="Connect your existing email (IMAP, POP3, SMTP) to Claude, Cursor and any AI assistant. Free hosted service or self-host. Zero mail retention, 100% private, open source under MIT."
+    />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+    <meta name="theme-color" content="#174f76" />
+    <meta name="color-scheme" content="light" />
+    <link rel="canonical" href="__ORIGIN__/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MailMCP" />
+    <meta property="og:url" content="__ORIGIN__/" />
+    <meta
+      property="og:title"
+      content="MailMCP: your email inside your AI assistant, nothing stored"
+    />
+    <meta
+      property="og:description"
+      content="Open-source MCP server for IMAP, POP3 and SMTP. Mail is read on demand and never saved. Use the free hosted service or self-host. MIT licensed."
+    />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="es_ES" />
+    <meta name="twitter:card" content="summary" />
+    <meta
+      name="twitter:title"
+      content="MailMCP: your email inside your AI assistant, nothing stored"
+    />
+    <meta
+      name="twitter:description"
+      content="Free hosted or self-hosted, zero-retention MCP server that connects existing email accounts to Claude, Cursor and any MCP client."
+    />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="MailMCP for language models" />
     <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/landing.css" />
     <script type="module" src="/app.js"></script>
+    <script type="module" src="/landing.js"></script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "__ORIGIN__/#website",
+            "url": "__ORIGIN__/",
+            "name": "MailMCP",
+            "inLanguage": ["en", "es"]
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "__ORIGIN__/#software",
+            "name": "MailMCP",
+            "url": "__ORIGIN__/",
+            "applicationCategory": "CommunicationApplication",
+            "applicationSubCategory": "MCP server",
+            "operatingSystem": "Linux, macOS, Windows, Docker",
+            "description": "Open-source MCP server that connects existing IMAP, POP3 and SMTP email accounts to AI assistants, available as a free hosted service or self-hosted. Zero mail retention: messages are fetched on demand and never stored. Only encrypted connection settings are kept.",
+            "featureList": [
+              "Free hosted service, no card required",
+              "Zero mail retention",
+              "Self-hosted, local stdio or hosted HTTPS with OAuth",
+              "AES-256-GCM encrypted credential vault",
+              "TLS 1.2+ to mail providers, STARTTLS fails closed",
+              "IMAP, POP3 and SMTP support",
+              "Attachment listing and download through MCP",
+              "Plain-text rendering, no remote images or tracking",
+              "English and Spanish interface"
+            ],
+            "license": "https://opensource.org/license/mit",
+            "isAccessibleForFree": true,
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "softwareVersion": "0.1.0",
+            "sameAs": ["https://github.com/VictorMinemu/mailmcp"]
+          },
+          {
+            "@type": "SoftwareSourceCode",
+            "@id": "__ORIGIN__/#source",
+            "name": "MailMCP source code",
+            "codeRepository": "https://github.com/VictorMinemu/mailmcp",
+            "programmingLanguage": "TypeScript",
+            "runtimePlatform": "Node.js 22",
+            "license": "https://opensource.org/license/mit",
+            "targetProduct": { "@id": "__ORIGIN__/#software" }
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "__ORIGIN__/#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Does MailMCP store my email?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. Messages are fetched from your provider when you or your assistant ask for them and are held in memory only for that request. Nothing about your mail is written to disk or logged."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What exactly does MailMCP save?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Only the settings needed to connect: server, port, username, app password, label and sender name. They live in a vault encrypted with AES-256-GCM under a 256-bit master key held by the operator. Sessions are kept in memory and expire after an hour."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is MailMCP free and open source?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. The full source is on GitHub under the MIT license, including the web client, the MCP server, the deployment templates and the test suite."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is the hosted version of MailMCP free?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. The hosted service is free for everyone, with no card, trial or paid tier. You sign in, connect the accounts you already have and start using it with your assistant. Self-hosting remains available with the same code and features."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is the hosted version as private as self-hosting?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "It runs the same open-source code with the same rules: mail is fetched live and never written to disk, there is no access or body logging, and only your encrypted connection settings are kept. Removing a connection deletes its credentials immediately. The difference is who holds the master key: the operator on the hosted service, you when you self-host."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Which AI assistants can use MailMCP?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Any client that supports the Model Context Protocol, including Claude Desktop, Claude Code, Cursor and VS Code. Locally it runs over stdio; on a domain it exposes an OAuth-protected MCP endpoint."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Does MailMCP give me an email address?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. You bring the accounts you already have. MailMCP never sells, provisions or hosts mailboxes."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can my assistant send email on its own?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Not without you. Sending and moving mail require an explicit confirmation, and the server instructs assistants to treat email content as untrusted data, never as instructions."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is MailMCP end-to-end encrypted?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. The server process decrypts credentials to log in to your provider, so whoever operates it and holds the master key could read them. Self-hosting keeps that person you."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How do I run MailMCP?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Create a free account on the hosted service and connect your accounts in the browser, or clone the repository and add it to your MCP client, or deploy the Docker image behind the included Caddy configuration with your own OIDC provider. The hosting guide covers self-hosting."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <header class="masthead">
       <a href="/" class="brand" aria-label="MailMCP home" data-i18n-aria-label="home"
         ><span class="stamp" aria-hidden="true">m</span>MailMCP</a
-      ><span class="tagline"><span data-i18n="tagline">Your mail, connected.</span></span
-      ><label class="language-picker"
+      ><span class="tagline"
+        ><span data-i18n="tagline">Private email for AI assistants.</span></span
+      >
+      <nav class="landing-nav" aria-label="Page sections" data-i18n-aria-label="lp_nav_label">
+        <a href="#how"><span data-i18n="lp_nav_how">How it works</span></a
+        ><a href="#hosted"><span data-i18n="lp_nav_hosted">Free hosted</span></a
+        ><a href="#privacy"><span data-i18n="lp_nav_privacy">Privacy</span></a
+        ><a href="#faq"><span data-i18n="lp_nav_faq">FAQ</span></a
+        ><a href="https://github.com/VictorMinemu/mailmcp" rel="noopener">GitHub</a>
+      </nav>
+      <label class="language-picker"
         ><span data-i18n="language">Language</span
         ><select id="language" data-language-picker>
           <option value="en">English</option>
@@ -23,30 +201,561 @@
     </header>
     <p id="notice" role="status" aria-live="polite" hidden></p>
     <main id="welcome" class="welcome">
-      <div class="postmark" aria-hidden="true">@</div>
-      <h1>
-        <span data-i18n="welcome_a">One place for</span><br /><span data-i18n="welcome_b"
-          >your email accounts.</span
-        >
-      </h1>
-      <p>
-        <span data-i18n="welcome_text"
-          >Connect the email you already use. Read it here or work with it through your
-          assistant.</span
-        >
-      </p>
-      <a id="login" class="button" href="/auth/login" hidden
-        ><span data-i18n="login">Sign in</span></a
-      ><button id="redeem" hidden><span data-i18n="redeem">Open my session</span></button>
-      <p id="local-help" class="muted" hidden>
-        <span data-i18n="local_help">Ask your assistant to open MailMCP using</span
-        ><code>web_open</code>.
-      </p>
-      <p class="footnote">
-        <span data-i18n="existing_only"
-          >We connect your existing accounts. We do not provide email addresses.</span
-        >
-      </p>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-inner">
+          <div class="hero-copy">
+            <p class="kicker">
+              <span data-i18n="lp_kicker"
+                >Free hosted service or self-hosted. Open source, MIT licensed.</span
+              >
+            </p>
+            <h1 id="hero-title">
+              <span data-i18n="lp_h1_a">Your email, inside your AI assistant.</span>
+              <em><span data-i18n="lp_h1_b">Nothing stored. Nothing tracked.</span></em>
+            </h1>
+            <p class="lead">
+              <span data-i18n="lp_lead"
+                >MailMCP connects the IMAP, POP3 and SMTP accounts you already have to Claude,
+                Cursor and any other MCP client. Mail is read on demand and never saved. Use the
+                free hosted service, or run it on your own machine or domain.</span
+              >
+            </p>
+            <div class="hero-actions">
+              <a id="login" class="button" href="/auth/login" data-hosted-only hidden
+                ><span data-i18n="lp_signup">Create a free account</span></a
+              ><button id="redeem" hidden><span data-i18n="redeem">Open my session</span></button
+              ><a class="button ghost" href="https://github.com/VictorMinemu/mailmcp" rel="noopener"
+                ><span data-i18n="lp_github">View on GitHub</span></a
+              >
+            </div>
+            <p class="signin-hint" data-hosted-only hidden>
+              <span data-i18n="lp_free_note">Free for everyone. No card, no trial.</span>
+              <a href="/auth/login"
+                ><span data-i18n="lp_signin">Already have an account? Sign in</span></a
+              >
+            </p>
+            <p id="local-help" class="muted" hidden>
+              <span data-i18n="local_help">Ask your assistant to open MailMCP using</span>
+              <code>web_open</code>.
+            </p>
+            <p class="footnote">
+              <span data-i18n="existing_only"
+                >We connect your existing accounts. We do not provide email addresses.</span
+              >
+            </p>
+          </div>
+          <figure class="demo" aria-labelledby="demo-caption">
+            <figcaption id="demo-caption" class="visually-hidden">
+              <span data-i18n="lp_demo_title">A conversation with your assistant</span>
+            </figcaption>
+            <div class="demo-stripe" aria-hidden="true"></div>
+            <div class="demo-body">
+              <p class="demo-user">
+                <span data-i18n="lp_demo_user">Anything urgent from my accountant this week?</span>
+              </p>
+              <ol class="demo-tools" aria-label="Tool calls" data-i18n-aria-label="lp_demo_tools">
+                <li class="demo-tool">
+                  <code>messages_list</code>
+                  <span class="demo-arg"
+                    ><span data-i18n="lp_demo_arg1">INBOX, newest 25</span></span
+                  >
+                  <span class="demo-tick" aria-hidden="true"></span>
+                </li>
+                <li class="demo-tool">
+                  <code>messages_read</code>
+                  <span class="demo-arg"
+                    ><span data-i18n="lp_demo_arg2">message 4821, 9 KB</span></span
+                  >
+                  <span class="demo-tick" aria-hidden="true"></span>
+                </li>
+              </ol>
+              <p class="demo-answer">
+                <span data-i18n="lp_demo_answer"
+                  >One message needs you: the Q3 filing is due Friday. Want me to draft a reply for
+                  your review?</span
+                >
+              </p>
+              <div
+                class="demo-seal"
+                role="img"
+                aria-label="0 bytes of mail stored"
+                data-i18n-aria-label="lp_demo_seal_a"
+              >
+                <span class="seal-ring"
+                  ><span class="seal-main"
+                    ><span data-i18n="lp_demo_seal_a">0 bytes of mail stored</span></span
+                  ><span class="seal-sub"
+                    ><span data-i18n="lp_demo_seal_b">read live, kept nowhere</span></span
+                  ></span
+                >
+              </div>
+            </div>
+          </figure>
+        </div>
+      </section>
+
+      <section class="pillars" aria-labelledby="pillars-title">
+        <h2 id="pillars-title" data-reveal>
+          <span data-i18n="lp_pillars_h">Three promises, each one checkable in the source.</span>
+        </h2>
+        <div class="pillar-grid" data-reveal-group>
+          <article data-reveal>
+            <h3><span data-i18n="lp_p1_h">Zero mail retention</span></h3>
+            <p>
+              <span data-i18n="lp_p1_t"
+                >Messages, subjects, attachments and contacts are fetched from your provider when
+                you ask and never written to disk. There is no access log and no body log. Sessions
+                live in memory and disappear on restart.</span
+              >
+            </p>
+          </article>
+          <article data-reveal>
+            <h3><span data-i18n="lp_p2_h">100% private</span></h3>
+            <p>
+              <span data-i18n="lp_p2_t"
+                >Whether you use the free hosted service or your own server, the only thing kept is
+                your connection settings, encrypted with AES-256-GCM. No analytics, no tracking
+                pixels, no third-party scripts, and email renders as plain text so remote images
+                never load.</span
+              >
+            </p>
+          </article>
+          <article data-reveal>
+            <h3><span data-i18n="lp_p3_h">Fully open source</span></h3>
+            <p>
+              <span data-i18n="lp_p3_t"
+                >Every line is public under the MIT license. Read the threat model, run the test
+                suite, fork it, or host it for your team. There is no closed component and no
+                upsell.</span
+              >
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="how" class="how" aria-labelledby="how-title">
+        <h2 id="how-title" data-reveal>
+          <span data-i18n="lp_how_h">Up and running in three steps</span>
+        </h2>
+        <ol class="steps" data-reveal-group>
+          <li data-reveal>
+            <h3><span data-i18n="lp_s1_h">Sign up, or run it yourself</span></h3>
+            <p>
+              <span data-i18n="lp_s1_t"
+                >Create a free account on the hosted service, or clone the repository and run it as
+                a local MCP server or as a Docker deployment on your own domain.</span
+              >
+            </p>
+          </li>
+          <li data-reveal>
+            <h3><span data-i18n="lp_s2_h">Connect an account you already have</span></h3>
+            <p>
+              <span data-i18n="lp_s2_t">Ask your assistant to open MailMCP with the tool</span>
+              <code>web_open</code>
+              <span data-i18n="lp_s2_t2"
+                >and add your IMAP, POP3 or SMTP settings in the browser. Credentials never enter
+                the chat transcript.</span
+              >
+            </p>
+          </li>
+          <li data-reveal>
+            <h3><span data-i18n="lp_s3_h">Ask in plain language</span></h3>
+            <p>
+              <span data-i18n="lp_s3_t"
+                >Triage the inbox, find an attachment, flag what matters, or draft a reply. Sending
+                and moving mail always wait for your confirmation.</span
+              >
+            </p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="tools" aria-labelledby="tools-title">
+        <div class="tools-intro" data-reveal>
+          <h2 id="tools-title">
+            <span data-i18n="lp_tools_h">Sixteen tools, one scope: your own accounts</span>
+          </h2>
+          <p>
+            <span data-i18n="lp_tools_t"
+              >Every tool runs as the authenticated user. None of them accepts another owner's ID,
+              and the ones that send or move mail wait for your confirmation.</span
+            >
+          </p>
+        </div>
+        <div class="marquee" aria-label="MCP tool names" data-i18n-aria-label="lp_tools_label">
+          <ul class="marquee-track">
+            <li><code>accounts_list</code></li>
+            <li><code>accounts_add</code></li>
+            <li><code>accounts_update</code></li>
+            <li><code>accounts_remove</code></li>
+            <li><code>accounts_verify</code></li>
+            <li><code>folders_list</code></li>
+            <li><code>folders_create</code></li>
+            <li><code>messages_list</code></li>
+          </ul>
+          <ul class="marquee-track reverse">
+            <li><code>messages_read</code></li>
+            <li><code>messages_flag</code></li>
+            <li><code>messages_move</code></li>
+            <li><code>messages_send</code></li>
+            <li><code>attachments_list</code></li>
+            <li><code>attachments_download</code></li>
+            <li><code>web_open</code></li>
+            <li><code>web_revoke_sessions</code></li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="hosted" class="ways" aria-labelledby="ways-title">
+        <h2 id="ways-title" data-reveal>
+          <span data-i18n="lp_ways_h">Start in a minute with us, or run it yourself</span>
+        </h2>
+        <div class="ways-grid" data-reveal-group>
+          <article class="way is-hosted" data-reveal>
+            <p class="way-tag"><span data-i18n="lp_way1_tag">Hosted by us</span></p>
+            <h3><span data-i18n="lp_way1_h">Free for everyone</span></h3>
+            <p>
+              <span data-i18n="lp_way1_t"
+                >No card, no trial, no plan to choose. Sign in, connect the accounts you already
+                have and start asking your assistant. It runs the exact code published in the
+                repository, at mailmcp.org, on a server we operate.</span
+              >
+            </p>
+            <ul>
+              <li>
+                <span data-i18n="lp_way1_l1"
+                  >Your mail never touches our disks: fetched live, kept nowhere</span
+                >
+              </li>
+              <li>
+                <span data-i18n="lp_way1_l2"
+                  >Connection settings encrypted with AES-256-GCM; remove them and they are
+                  gone</span
+                >
+              </li>
+              <li>
+                <span data-i18n="lp_way1_l3"
+                  >No analytics, no logs of your mail, no tracking of any kind</span
+                >
+              </li>
+            </ul>
+            <div class="hero-actions" data-hosted-only hidden>
+              <a class="button" href="/auth/login"
+                ><span data-i18n="lp_signup">Create a free account</span></a
+              >
+            </div>
+          </article>
+          <article class="way" data-reveal>
+            <p class="way-tag"><span data-i18n="lp_way2_tag">Hosted by you</span></p>
+            <h3><span data-i18n="lp_way2_h">Same code, your hardware</span></h3>
+            <p>
+              <span data-i18n="lp_way2_t"
+                >Run it as a local MCP server on your laptop, or deploy the Docker image on your own
+                domain behind your own identity provider. Nothing is held back for a paid tier,
+                because there is none.</span
+              >
+            </p>
+            <ul>
+              <li><span data-i18n="lp_way2_l1">Local stdio mode in a handful of commands</span></li>
+              <li>
+                <span data-i18n="lp_way2_l2">Docker, Caddy and Portainer templates included</span>
+              </li>
+              <li>
+                <span data-i18n="lp_way2_l3">Bring your own OIDC provider, such as Keycloak</span>
+              </li>
+            </ul>
+            <div class="hero-actions">
+              <a
+                class="button ghost"
+                href="https://github.com/VictorMinemu/mailmcp/blob/main/docs/HOSTING.md"
+                rel="noopener"
+                ><span data-i18n="lp_cta_hosting">Hosting guide</span></a
+              >
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="privacy" class="privacy" aria-labelledby="privacy-title">
+        <div class="privacy-inner">
+          <div class="privacy-intro" data-reveal>
+            <h2 id="privacy-title">
+              <span data-i18n="lp_priv_h">Privacy by design, not by policy</span>
+            </h2>
+            <p>
+              <span data-i18n="lp_priv_t"
+                >Your assistant talks to MailMCP. MailMCP talks to your mail provider over verified
+                TLS. Nothing sits in between, and nothing stays behind.</span
+              >
+            </p>
+          </div>
+          <div
+            class="flow"
+            data-reveal
+            role="img"
+            aria-label="Data flow: your mail provider, MailMCP, your assistant"
+            data-i18n-aria-label="lp_flow_label"
+          >
+            <div class="flow-node">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M3 6.5A1.5 1.5 0 0 1 4.5 5h15A1.5 1.5 0 0 1 21 6.5v11a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"
+                />
+                <path d="m3.5 6.5 8.5 6.5 8.5-6.5" />
+              </svg>
+              <strong><span data-i18n="lp_flow_provider">Your mail provider</span></strong>
+              <small
+                ><span data-i18n="lp_flow_provider_sub"
+                  >IMAP, POP3 and SMTP over TLS 1.2 or later</span
+                ></small
+              >
+            </div>
+            <div class="flow-link" aria-hidden="true"><span class="packet"></span></div>
+            <div class="flow-node is-core">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="5" y="10" width="14" height="10" rx="1.5" />
+                <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                <circle cx="12" cy="15" r="1.2" />
+              </svg>
+              <strong>MailMCP</strong>
+              <small
+                ><span data-i18n="lp_flow_mailmcp_sub"
+                  >Encrypted vault holding connection settings only. Mail passes through memory and
+                  is gone.</span
+                ></small
+              >
+            </div>
+            <div class="flow-link" aria-hidden="true"><span class="packet"></span></div>
+            <div class="flow-node">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3.5 13.8 9l5.7 1.8-5.7 1.8L12 18.2l-1.8-5.6L4.5 10.8 10.2 9z" />
+              </svg>
+              <strong><span data-i18n="lp_flow_assistant">Your assistant</span></strong>
+              <small
+                ><span data-i18n="lp_flow_assistant_sub"
+                  >Any MCP client, on your machine or over authenticated HTTPS</span
+                ></small
+              >
+            </div>
+          </div>
+          <table class="ledger" data-reveal>
+            <caption>
+              <span data-i18n="lp_table_caption">What MailMCP keeps and what it never keeps</span>
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col"><span data-i18n="lp_keep">Stored</span></th>
+                <th scope="col" class="never"><span data-i18n="lp_never">Never stored</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <span data-i18n="lp_k1"
+                    >Connection settings for each account, encrypted with AES-256-GCM under a key
+                    you hold</span
+                  >
+                </td>
+                <td class="never">
+                  <span data-i18n="lp_n1">Message bodies, subjects or headers</span>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span data-i18n="lp_k2"
+                    >Hashed session tokens in memory, valid for one hour and revocable at any
+                    time</span
+                  >
+                </td>
+                <td class="never">
+                  <span data-i18n="lp_n2">Attachments, contacts or search history</span>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span data-i18n="lp_k3">Your language preference, in your own browser</span>
+                </td>
+                <td class="never">
+                  <span data-i18n="lp_n3">Access logs, analytics or tracking identifiers</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="privacy-note" data-reveal>
+            <span data-i18n="lp_priv_note"
+              >Not end-to-end encrypted, and we say so plainly: whoever runs the server and holds
+              the master key can decrypt the vault. When you self-host, that person is you.</span
+            >
+            <a href="https://github.com/VictorMinemu/mailmcp/blob/main/SECURITY.md" rel="noopener"
+              ><span data-i18n="lp_priv_link">Read the full threat model</span></a
+            >
+          </p>
+        </div>
+      </section>
+
+      <section class="compat" aria-labelledby="compat-title">
+        <h2 id="compat-title" data-reveal>
+          <span data-i18n="lp_compat_h">Works with the tools you already use</span>
+        </h2>
+        <div class="compat-grid" data-reveal-group>
+          <div data-reveal>
+            <h3><span data-i18n="lp_clients_h">MCP clients</span></h3>
+            <p>
+              <span data-i18n="lp_clients_t"
+                >Claude Desktop, Claude Code, Cursor, VS Code, Windsurf and any client that speaks
+                the Model Context Protocol, over local stdio or authenticated HTTPS.</span
+              >
+            </p>
+          </div>
+          <div data-reveal>
+            <h3><span data-i18n="lp_providers_h">Mail providers</span></h3>
+            <p>
+              <span data-i18n="lp_providers_t"
+                >Gmail, Outlook, iCloud, Fastmail, Proton through Bridge, your company's mail
+                server, or any provider offering IMAP, POP3 or SMTP with an app password.</span
+              >
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="faq" class="faq" aria-labelledby="faq-title">
+        <h2 id="faq-title" data-reveal>
+          <span data-i18n="lp_faq_h">Questions people ask before trusting us with their mail</span>
+        </h2>
+        <div class="faq-list" data-reveal>
+          <details>
+            <summary><span data-i18n="lp_q1">Does MailMCP store my email?</span></summary>
+            <p>
+              <span data-i18n="lp_a1"
+                >No. Messages are fetched from your provider when you or your assistant ask for them
+                and are held in memory only for that request. Nothing about your mail is written to
+                disk or logged.</span
+              >
+            </p>
+          </details>
+          <details>
+            <summary><span data-i18n="lp_q2">What exactly does MailMCP save?</span></summary>
+            <p>
+              <span data-i18n="lp_a2"
+                >Only the settings needed to connect: server, port, username, app password, label
+                and sender name. They live in a vault encrypted with AES-256-GCM under a 256-bit
+                master key held by the operator. Sessions are kept in memory and expire after an
+                hour.</span
+              >
+            </p>
+          </details>
+          <details>
+            <summary><span data-i18n="lp_q3">Is MailMCP free and open source?</span></summary>
+            <p>
+              <span data-i18n="lp_a3"
+                >Yes. The full source is on GitHub under the MIT license, including the web client,
+                the MCP server, the deployment templates and the test suite.</span
+              >
+            </p>
+          </details>
+          <details>
+            <summary><span data-i18n="lp_q9">Is the hosted version of MailMCP free?</span></summary>
+            <p>
+              <span data-i18n="lp_a9"
+                >Yes. The hosted service is free for everyone, with no card, trial or paid tier. You
+                sign in, connect the accounts you already have and start using it with your
+                assistant. Self-hosting remains available with the same code and features.</span
+              >
+            </p>
+          </details>
+          <details>
+            <summary>
+              <span data-i18n="lp_q10">Is the hosted version as private as self-hosting?</span>
+            </summary>
+            <p>
+              <span data-i18n="lp_a10"
+                >It runs the same open-source code with the same rules: mail is fetched live and
+                never written to disk, there is no access or body logging, and only your encrypted
+                connection settings are kept. Removing a connection deletes its credentials
+                immediately. The difference is who holds the master key: the operator on the hosted
+                service, you when you self-host.</span
+              >
+            </p>
+          </details>
+          <details>
+            <summary><span data-i18n="lp_q4">Which AI assistants can use MailMCP?</span></summary>
+            <p>
+              <span data-i18n="lp_a4"
+                >Any client that supports the Model Context Protocol, including Claude Desktop,
+                Claude Code, Cursor and VS Code. Locally it runs over stdio; on a domain it exposes
+                an OAuth-protected MCP endpoint.</span
+              >
+            </p>
+          </details>
+          <details>
+            <summary><span data-i18n="lp_q5">Does MailMCP give me an email address?</span></summary>
+            <p>
+              <span data-i18n="lp_a5"
+                >No. You bring the accounts you already have. MailMCP never sells, provisions or
+                hosts mailboxes.</span
+              >
+            </p>
+          </details>
+          <details>
+            <summary>
+              <span data-i18n="lp_q6">Can my assistant send email on its own?</span>
+            </summary>
+            <p>
+              <span data-i18n="lp_a6"
+                >Not without you. Sending and moving mail require an explicit confirmation, and the
+                server instructs assistants to treat email content as untrusted data, never as
+                instructions.</span
+              >
+            </p>
+          </details>
+          <details>
+            <summary><span data-i18n="lp_q7">Is MailMCP end-to-end encrypted?</span></summary>
+            <p>
+              <span data-i18n="lp_a7"
+                >No. The server process decrypts credentials to log in to your provider, so whoever
+                operates it and holds the master key could read them. Self-hosting keeps that person
+                you.</span
+              >
+            </p>
+          </details>
+          <details>
+            <summary><span data-i18n="lp_q8">How do I run MailMCP?</span></summary>
+            <p>
+              <span data-i18n="lp_a8"
+                >Create a free account on the hosted service and connect your accounts in the
+                browser, or clone the repository and add it to your MCP client, or deploy the Docker
+                image behind the included Caddy configuration with your own OIDC provider. The
+                hosting guide covers self-hosting.</span
+              >
+            </p>
+          </details>
+        </div>
+      </section>
+
+      <section class="closing" aria-labelledby="closing-title">
+        <div class="closing-stripe" aria-hidden="true"></div>
+        <h2 id="closing-title" data-reveal>
+          <span data-i18n="lp_cta_h">Your mail, your server, your assistant.</span>
+        </h2>
+        <p data-reveal>
+          <span data-i18n="lp_cta_t"
+            >Free on the hosted service, or on your own server in a few minutes.</span
+          >
+        </p>
+        <div class="hero-actions" data-reveal>
+          <a class="button" href="/auth/login" data-hosted-only hidden
+            ><span data-i18n="lp_signup">Create a free account</span></a
+          ><a class="button ghost" href="https://github.com/VictorMinemu/mailmcp" rel="noopener"
+            ><span data-i18n="lp_cta_github">Read the source on GitHub</span></a
+          ><a
+            class="button ghost"
+            href="https://github.com/VictorMinemu/mailmcp/blob/main/docs/HOSTING.md"
+            rel="noopener"
+            ><span data-i18n="lp_cta_hosting">Hosting guide</span></a
+          >
+        </div>
+      </section>
     </main>
     <main id="workspace" class="workspace" hidden>
       <aside>
@@ -308,8 +1017,26 @@
         </div>
       </form>
     </dialog>
-    <footer>
-      MailMCP <span><span data-i18n="footer">Open-source software for your mail.</span></span>
+    <footer class="site-footer">
+      <div class="footer-brand">
+        <span class="stamp" aria-hidden="true">m</span>
+        <span>MailMCP <span data-i18n="footer">Open-source software for your mail.</span></span>
+      </div>
+      <nav aria-label="Project links" data-i18n-aria-label="lp_footer_nav">
+        <a href="https://github.com/VictorMinemu/mailmcp" rel="noopener">GitHub</a>
+        <a href="https://github.com/VictorMinemu/mailmcp/blob/main/SECURITY.md" rel="noopener"
+          ><span data-i18n="lp_f_security">Security policy</span></a
+        >
+        <a href="https://github.com/VictorMinemu/mailmcp/blob/main/docs/HOSTING.md" rel="noopener"
+          ><span data-i18n="lp_f_hosting">Hosting guide</span></a
+        >
+        <a href="https://github.com/VictorMinemu/mailmcp/blob/main/docs/MCP.md" rel="noopener"
+          ><span data-i18n="lp_f_tools">MCP tools</span></a
+        >
+        <a href="https://github.com/VictorMinemu/mailmcp/blob/main/LICENSE" rel="noopener"
+          ><span data-i18n="lp_f_license">MIT license</span></a
+        >
+      </nav>
     </footer>
   </body>
 </html>

@@ -4,9 +4,9 @@
 
 Existing account management; IMAP/POP3S/SMTP; authenticated local and hosted MCP; OIDC browser login; isolated accounts; encrypted persistence; token-based web access; MIME attachment listing/download; plain-text web client; tests, CI and deployment templates.
 
-## Public service launch
+## Public service
 
-Select the actual domain, hosting and identity provider. Validate OAuth client onboarding and live provider connections. Add service-specific privacy/retention documentation, monitoring, abuse handling and recovery procedures. Verify backup restoration and run a focused security review before inviting public users. The repository does not imply that a free hosted service is already online.
+The free hosted service runs at [https://mailmcp.org/](https://mailmcp.org/) on the Portainer, Nginx Proxy Manager, Cloudflare and Keycloak deployment described in the docs, with the public landing page, `robots.txt`, `sitemap.xml` and `llms.txt` served from the same process. Ongoing operational work: service-specific privacy and retention documentation, monitoring, abuse handling, recovery procedures, periodic backup-restoration drills and focused security reviews as usage grows.
 
 ## Mail compatibility and usability
 

@@ -54,7 +54,12 @@ export function createWeb(config: Config, services: Services, identity?: Identit
     '/app.js': ['app.js', 'text/javascript'],
     '/i18n.js': ['i18n.js', 'text/javascript'],
     '/language.js': ['language.js', 'text/javascript'],
+    '/landing.js': ['landing.js', 'text/javascript'],
     '/style.css': ['style.css', 'text/css'],
+    '/landing.css': ['landing.css', 'text/css'],
+    '/robots.txt': ['robots.txt', 'text/plain'],
+    '/sitemap.xml': ['sitemap.xml', 'application/xml'],
+    '/llms.txt': ['llms.txt', 'text/plain'],
   };
   const handler = createMcpHandler(
     (ctx) => {
@@ -247,7 +252,10 @@ export function createWeb(config: Config, services: Services, identity?: Identit
       }
       const asset = Object.hasOwn(assets, path) ? assets[path] : undefined;
       if (req.method === 'GET' && asset) {
-        const file = await readFile(new URL(`../web/${asset[0]}`, import.meta.url));
+        // Public metadata (canonical URL, sitemap, robots) is bound to the configured origin.
+        const file = (
+          await readFile(new URL(`../web/${asset[0]}`, import.meta.url), 'utf8')
+        ).replaceAll('__ORIGIN__', config.origin);
         if (path === '/') res.setHeader('content-language', 'en');
         res.writeHead(200, { 'content-type': `${asset[1]}; charset=utf-8` });
         res.end(file);

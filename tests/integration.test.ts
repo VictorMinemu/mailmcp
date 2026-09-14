@@ -176,7 +176,25 @@ test('real stdio MCP handshake, tools, resources, prompts and one-time browser s
     assert.equal((await rawFetch(`${origin}/locales/fr.json`)).status, 404);
     const page = await rawFetch(origin);
     assert.match(page.headers.get('content-security-policy')!, /frame-ancestors 'none'/);
-    assert.match(await page.text(), /MailMCP/);
+    const html = await page.text();
+    assert.match(html, /MailMCP/);
+    assert.ok(html.includes(`<link rel="canonical" href="${origin}/" />`));
+    assert.ok(html.includes('application/ld+json'));
+    assert.ok(!html.includes('__ORIGIN__'));
+    for (const [path, type, needle] of [
+      ['/robots.txt', 'text/plain', `Sitemap: ${origin}/sitemap.xml`],
+      ['/sitemap.xml', 'application/xml', `<loc>${origin}/</loc>`],
+      ['/llms.txt', 'text/plain', '# MailMCP'],
+      ['/landing.css', 'text/css', '.hero'],
+      ['/landing.js', 'text/javascript', 'IntersectionObserver'],
+    ] as const) {
+      const response = await rawFetch(`${origin}${path}`);
+      assert.equal(response.status, 200, path);
+      assert.match(response.headers.get('content-type')!, new RegExp(`^${type}`), path);
+      const text = await response.text();
+      assert.ok(text.includes(needle), `${path} should contain ${needle}`);
+      assert.ok(!text.includes('__ORIGIN__'), path);
+    }
     await rawFetch(`${origin}/api/logout`, { method: 'POST', headers, body: '{}' });
     assert.equal((await rawFetch(`${origin}/api/accounts`, { headers })).status, 401);
     assert.ok(!errors.includes(sample.incoming.password));

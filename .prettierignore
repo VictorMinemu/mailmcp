@@ -6,3 +6,4 @@ output
 package-lock.json
 .env
 .env.*
+.playwright-mcp

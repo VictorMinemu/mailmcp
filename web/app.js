@@ -453,11 +453,11 @@ document.querySelectorAll('input, textarea, select').forEach((field) => {
 (async () => {
   await initLanguage();
   const config = await api('/api/config');
-  $('login').hidden = !config.hosted;
+  document.querySelectorAll('[data-hosted-only]').forEach((el) => (el.hidden = !config.hosted));
   $('local-help').hidden = config.hosted;
   if (loginToken) {
     $('redeem').hidden = false;
-    $('login').hidden = true;
+    document.querySelectorAll('[data-hosted-only]').forEach((el) => (el.hidden = true));
     return;
   }
   try {

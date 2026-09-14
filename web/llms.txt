@@ -1,0 +1,37 @@
+# MailMCP
+
+> MailMCP is an open-source (MIT) MCP server that connects a person's existing email accounts (IMAP, POP3 and SMTP) to AI assistants such as Claude, Cursor and any other Model Context Protocol client, plus a minimal web client for the same accounts. It is available as a free hosted service for everyone (no card, no trial) and as self-hostable software. It stores no email and keeps only encrypted connection settings.
+
+Site: __ORIGIN__/
+Hosted service (free for everyone): https://mailmcp.org/
+Hosted MCP endpoint: https://mailmcp.org/mcp
+Source code: https://github.com/VictorMinemu/mailmcp
+License: MIT
+
+## Key facts
+
+- Free hosted service: anyone can create an account and use it at no cost; the hosted deployment runs the same published code and the same zero-mail-retention rules. Self-hosting offers identical features.
+- Zero mail retention: messages, subjects, attachments and contacts are fetched from the mail provider on demand and never written to disk. No access or body logging is enabled.
+- What is stored: only the account connection settings (host, port, username, app password, label, sender name) in a vault encrypted with AES-256-GCM under an operator-held 256-bit master key. Sessions live in memory and expire after one hour or on restart.
+- 100% private: self-host locally over stdio, or run it on your own domain behind your own OAuth/OIDC identity provider. No analytics, no tracking pixels, no third-party scripts on the web client. Email is rendered as plain text; remote images and HTML are never executed.
+- Transport security: TLS 1.2 or later to mail providers with certificate verification; STARTTLS fails closed; mail hosts are operator-allowlisted; private and reserved network destinations are blocked.
+- Bring your own account: MailMCP does not sell, provision or host email addresses. It works with any provider that supports IMAP/POP3/SMTP with a password or app password (mail-provider OAuth is on the roadmap).
+- Not end-to-end encrypted: whoever operates the server and holds the master key can decrypt the vault. When you self-host, that is you.
+
+## MCP tools
+
+accounts_list, accounts_add, accounts_update, accounts_remove, accounts_verify, folders_list, folders_create, messages_list, messages_read, messages_flag, messages_move, messages_send (requires explicit confirmation), attachments_list, attachments_download (embedded binary resource, 5 MB limit), web_open (one-time 60-second browser login link), web_revoke_sessions.
+
+## How it works
+
+1. Create a free account on the hosted service, or run MailMCP locally (stdio) or on your own domain (hosted HTTPS with OAuth-protected MCP endpoint at /mcp).
+2. Ask your assistant to call web_open and add your IMAP/POP3/SMTP account in the browser, so credentials never enter the chat transcript.
+3. Ask your assistant to read, triage, flag, move, download attachments or draft and send mail. Sending and moving always require the user's confirmation.
+
+## Documentation
+
+- README: https://github.com/VictorMinemu/mailmcp#readme
+- Security policy and threat model: https://github.com/VictorMinemu/mailmcp/blob/main/SECURITY.md
+- Hosting guide: https://github.com/VictorMinemu/mailmcp/blob/main/docs/HOSTING.md
+- MCP tool reference: https://github.com/VictorMinemu/mailmcp/blob/main/docs/MCP.md
+- Roadmap: https://github.com/VictorMinemu/mailmcp/blob/main/docs/ROADMAP.md

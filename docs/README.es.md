@@ -1,6 +1,6 @@
 # MailMCP
 
-MailMCP conecta cuentas de correo que ya existen a un asistente mediante MCP y a un cliente web. **No ofrece ni crea direcciones de correo propias.**
+MailMCP conecta cuentas de correo que ya existen a un asistente mediante MCP y a un cliente web. Está disponible como **servicio alojado gratuito en [mailmcp.org](https://mailmcp.org/)** y como software para autoalojar. **No ofrece ni crea direcciones de correo propias.**
 
 Incluye IMAP, POP3 con TLS y SMTP; configuración de cuentas y nombres de remitente; lectura, envío y **descarga de archivos adjuntos desde el MCP y el panel**. La tool `web_open` devuelve un enlace de un solo uso, válido durante 60 segundos, para abrir la sesión del usuario que la solicita.
 
@@ -27,11 +27,17 @@ Usa `messages_list`, después `attachments_list` y finalmente `attachments_downl
 
 Límites iniciales: mensajes de hasta 10 MB y adjuntos individuales de hasta 5 MB. Los archivos no se ejecutan, no se guardan en el servidor y no se analizan con antivirus.
 
-## Servicio gratuito con dominio
+## Servicio alojado gratuito
 
-La base para alojarlo está incluida: Docker, Caddy, autenticación OIDC/OAuth y aislamiento entre usuarios. Sigue [la guía de alojamiento](HOSTING.md) o la de [Portainer, Nginx Proxy Manager y Cloudflare](PORTAINER.md). Para activarlo hacen falta el dominio, el alojamiento y la configuración del proveedor de identidad. El repositorio por sí solo no publica un servicio web.
+Cualquier persona puede usar MailMCP en [https://mailmcp.org/](https://mailmcp.org/) sin coste: sin tarjeta, sin prueba limitada, sin plan de pago. Crea una cuenta en el proveedor de identidad, conecta tus cuentas IMAP, POP3 o SMTP desde el navegador y apunta tu cliente MCP a `https://mailmcp.org/mcp`; el cliente descubre el servidor OAuth mediante los metadatos publicados e inicia sesión con la misma identidad.
 
-Las invitaciones y cuentas compartidas quedan para versiones posteriores. El cifrado es del lado del servidor: quien administra la clave maestra puede descifrar las credenciales. La versión inicial tiene pruebas automatizadas; falta validar la configuración concreta con proveedores reales antes de abrir un servicio al público.
+El servicio ejecuta el código de este repositorio con las mismas reglas que una instancia autoalojada: el correo se obtiene bajo demanda y nunca se escribe en disco, no hay registro de accesos ni de contenidos, y solo se guarda la configuración de conexión cifrada. Eliminar una conexión borra sus credenciales. El operador posee la clave maestra, así que no es cifrado de extremo a extremo; consulta la [política de seguridad](../SECURITY.md) y autoalójalo si necesitas controlar la clave.
+
+## Alojarlo en tu propio dominio
+
+La base está incluida: Docker, Caddy, autenticación OIDC/OAuth y aislamiento entre usuarios. Sigue [la guía de alojamiento](HOSTING.md) o la de [Portainer, Nginx Proxy Manager y Cloudflare](PORTAINER.md). Hacen falta el dominio, el alojamiento y la configuración del proveedor de identidad.
+
+Las invitaciones y cuentas compartidas quedan para versiones posteriores. El cifrado es del lado del servidor: quien administra la clave maestra puede descifrar las credenciales.
 
 ## Idiomas
 
