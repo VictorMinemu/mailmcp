@@ -1,5 +1,5 @@
 import { ImapFlow } from 'imapflow';
-import nodemailer from 'nodemailer';
+import { smtpTransport } from './smtp.js';
 import { simpleParser } from 'mailparser';
 import { Accounts } from './accounts.js';
 import { AppError } from './errors.js';
@@ -15,6 +15,14 @@ import {
   attachmentSchema,
   type Account,
 } from './schemas.js';
+
+// Enforce limits in the protocol parser, before an untrusted server can allocate
+// an oversized response. A FETCH size request alone is not a memory boundary.
+export const IMAP_LIMITS = {
+  maxLineLength: 64_000,
+  maxLiteralSize: MAX_MESSAGE + 1,
+  maxResponseSize: MAX_MESSAGE + 128_000,
+};
 
 export class Mail {
   private active = new Map<string, number>();
@@ -42,6 +50,7 @@ export class Mail {
       throw new AppError('UNSUPPORTED', 'This operation requires IMAP.');
     const target = await mailEndpoint(incoming.host, this.allowed);
     const client = new ImapFlow({
+      ...IMAP_LIMITS,
       host: target.address,
       port: incoming.port,
       secure: incoming.security === 'tls',
@@ -80,21 +89,7 @@ export class Mail {
     if (!account.smtp) throw new AppError('UNSUPPORTED', 'Configure SMTP to send mail.');
     const c = account.smtp,
       target = await mailEndpoint(c.host, this.allowed);
-    return nodemailer.createTransport({
-      host: target.address,
-      port: c.port,
-      secure: c.security === 'tls',
-      requireTLS: true,
-      auth: { user: c.username, pass: c.password },
-      tls: { servername: target.servername, rejectUnauthorized: true, minVersion: 'TLSv1.2' },
-      connectionTimeout: 10_000,
-      greetingTimeout: 10_000,
-      socketTimeout: 15_000,
-      disableFileAccess: true,
-      disableUrlAccess: true,
-      logger: false,
-      debug: false,
-    });
+    return smtpTransport(c, target);
   }
   private validity(client: ImapFlow, expected?: string) {
     const current = client.mailbox && String(client.mailbox.uidValidity);

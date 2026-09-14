@@ -245,7 +245,7 @@ export function createWeb(config: Config, services: Services, identity?: Identit
         res.end(file);
         return;
       }
-      const asset = assets[path];
+      const asset = Object.hasOwn(assets, path) ? assets[path] : undefined;
       if (req.method === 'GET' && asset) {
         const file = await readFile(new URL(`../web/${asset[0]}`, import.meta.url));
         if (path === '/') res.setHeader('content-language', 'en');

@@ -66,7 +66,7 @@ MAILMCP_OIDC_CLIENT_ID=mailmcp-web
 MAILMCP_OAUTH_SCOPE=mailmcp
 ```
 
-Provide a generated master key and the remaining environment values, configure the provider, and use the included Docker/Caddy deployment. Follow [the complete hosting guide](docs/HOSTING.md), including the distinct browser client and MCP resource configuration. Do not expose the application's internal HTTP port directly to the internet.
+Provide a generated master key and the remaining environment values, configure the provider, and use the included Docker/Caddy deployment or [Portainer with Nginx Proxy Manager and Cloudflare](docs/PORTAINER.md). Follow [the complete hosting guide](docs/HOSTING.md), including the distinct browser client and MCP resource configuration. Do not expose the application's internal HTTP port directly to the internet.
 
 ## Attachment example
 

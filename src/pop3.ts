@@ -1,5 +1,4 @@
 import { connect, type TLSSocket } from 'node:tls';
-import { once } from 'node:events';
 import type { Duplex } from 'node:stream';
 import { AppError } from './errors.js';
 
@@ -87,7 +86,27 @@ export class Pop3 {
   async login(username: string, password: string) {
     if (/[\r\n\x00]/.test(username + password))
       throw new AppError('INVALID_INPUT', 'Invalid POP3 credentials.');
-    await once(this.socket, 'secureConnect');
+    // A TLS peer can close without emitting an error. Waiting only for
+    // secureConnect/error would then retain a concurrency slot indefinitely.
+    await new Promise<void>((resolve, reject) => {
+      const cleanup = () => {
+        this.socket.off('secureConnect', connected);
+        this.socket.off('error', failed);
+        this.socket.off('close', failed);
+      };
+      const connected = () => {
+        cleanup();
+        resolve();
+      };
+      const failed = () => {
+        cleanup();
+        reject(new AppError('POP3_CONNECTION', 'POP3 connection failed.'));
+      };
+      if (this.socket.destroyed) return failed();
+      this.socket.once('secureConnect', connected);
+      this.socket.once('error', failed);
+      this.socket.once('close', failed);
+    });
     await this.lines.response();
     await this.command(`USER ${username}`);
     await this.command(`PASS ${password}`);

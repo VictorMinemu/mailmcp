@@ -1,0 +1,63 @@
+# Portainer > Stacks > Add stack > Repository. Compose path: deploy/portainer.yaml
+# Set variables in Portainer; never put production secrets in the repository.
+services:
+  mailmcp:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: mailmcp:local
+    pull_policy: build
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 20s
+    environment:
+      NODE_OPTIONS: --max-old-space-size=384
+      MAILMCP_MODE: hosted
+      MAILMCP_PUBLIC_URL: ${MAILMCP_PUBLIC_URL:-https://mailmcp.org}
+      MAILMCP_LANGUAGE: ${MAILMCP_LANGUAGE:-en}
+      MAILMCP_BIND: 0.0.0.0
+      MAILMCP_WEB_PORT: 3210
+      MAILMCP_DATA_DIR: /app/data
+      MAILMCP_MASTER_KEY: ${MAILMCP_MASTER_KEY:?Set a persistent random master key}
+      MAILMCP_OIDC_ISSUER: ${MAILMCP_OIDC_ISSUER:?Set the HTTPS identity provider issuer}
+      MAILMCP_OIDC_CLIENT_ID: ${MAILMCP_OIDC_CLIENT_ID:?Set the browser OIDC client ID}
+      MAILMCP_OIDC_CLIENT_SECRET: ${MAILMCP_OIDC_CLIENT_SECRET:-}
+      MAILMCP_OAUTH_SCOPE: ${MAILMCP_OAUTH_SCOPE:-mailmcp}
+      MAILMCP_ALLOWED_HOSTS: ${MAILMCP_ALLOWED_HOSTS:-}
+    volumes:
+      - mailmcp_data:/app/data
+    networks:
+      proxy:
+        aliases:
+          - mailmcp
+    expose:
+      - '3210'
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 768m
+    cpus: 1.0
+    pids_limit: 100
+    healthcheck:
+      test:
+        - CMD
+        - /nodejs/bin/node
+        - -e
+        - "const http=require('node:http'); const r=http.get({host:'127.0.0.1',port:3210,path:'/healthz',headers:{Host:new URL(process.env.MAILMCP_PUBLIC_URL).host}},s=>{s.resume();process.exitCode=s.statusCode===200?0:1});r.setTimeout(3000,()=>r.destroy());r.on('error',()=>{process.exitCode=1});"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+volumes:
+  mailmcp_data:
+networks:
+  proxy:
+    external: true
+    name: ${MAILMCP_PROXY_NETWORK:-nginx-proxy-manager_default}

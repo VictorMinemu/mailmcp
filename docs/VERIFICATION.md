@@ -30,3 +30,13 @@ GitHub CI on the initial published commit passed on Node.js 22 and 24, including
 English and Spanish passed type checking, all 20 automated tests, and a Docker image build. Added checks cover catalog completeness and placeholders, regional language negotiation, translated MCP descriptions/errors/prompts and web links, HTTP error language, and separate hosted clients using different languages.
 
 Browser checks with synthetic mail confirmed automatic language selection, switching without losing a populated draft, translated validation feedback and dates, and persistence after reload. Switching the message reader translated attachment actions while preserving the original message and filename. Downloaded `ejemplo.txt` still contained the original `Hola desde MailMCP` bytes. The compose dialog and its language selector were inspected at 390px width. No real email was sent.
+
+## Deployment security review — 2026-09-14
+
+All 23 tests, TypeScript checks and the build passed after adding protocol resource limits. Regression tests exercise oversized IMAP literals and unterminated lines, a trickling SMTP peer and POP3 disconnection during the TLS handshake. SMTP now owns its underlying socket so a hard deadline closes active connections; POP3 handshake cancellation rejects promptly. Static asset lookup rejects inherited object properties.
+
+The complete npm audit reported zero known dependency vulnerabilities. Trivy 0.74.0 found 69 high/critical findings in the previous Debian slim runtime, including the bundled npm tooling. The replacement distroless Node.js runtime reported zero high/critical findings in the local image scan. This result is limited to the scanned image and vulnerability database at that time; it is not a guarantee that no vulnerabilities exist. CI now scans each built runtime image and fails for high/critical findings.
+
+The hardened container started with a read-only root, all capabilities dropped, no-new-privileges and a fresh persistent volume. UID 65532 could write the data directory. HTTP checks returned 200 for health and the Spanish catalog, 401 for unauthenticated accounts and MCP, and 404 for an inherited-property path. Graceful shutdown returned exit code zero. Synthetic identity configuration was used only for this local smoke test; it does not establish real-provider sign-in.
+
+The Portainer deployment joins an existing proxy network without publishing an application port. Its health check, memory/process limits, bounded logs and data-volume ownership are documented in [the deployment guide](PORTAINER.md). Real identity-provider login, MCP client onboarding and mail-provider interoperability remain launch checks.
