@@ -1,0 +1,39 @@
+services:
+  mailmcp:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MAILMCP_MODE: hosted
+      MAILMCP_BIND: 0.0.0.0
+      MAILMCP_WEB_PORT: 3210
+      MAILMCP_DATA_DIR: /app/data
+    volumes:
+      - mailmcp_data:/app/data
+    expose:
+      - '3210'
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 512m
+    pids_limit: 100
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      MAILMCP_DOMAIN: ${MAILMCP_DOMAIN:?Set MAILMCP_DOMAIN to your public hostname}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - mailmcp
+volumes:
+  mailmcp_data:
+  caddy_data:
+  caddy_config:

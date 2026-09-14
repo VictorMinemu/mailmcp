@@ -1,0 +1,537 @@
+:root {
+  --paper: #fff;
+  --canvas: #f1f5f8;
+  --ink: #223c50;
+  --muted: #596d7b;
+  --navy: #174f76;
+  --blue: #e2edf5;
+  --line: #cedbe4;
+  --error: #a42b38;
+  font-family: 'Avenir Next', Avenir, 'Segoe UI', sans-serif;
+  color: var(--ink);
+  background: var(--canvas);
+  font-size: 15px;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button,
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--navy);
+  color: #fff;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  min-height: 40px;
+}
+button:hover,
+.button:hover {
+  filter: brightness(0.92);
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.quiet {
+  background: transparent;
+  color: var(--navy);
+  border-color: var(--line);
+}
+.small {
+  font-size: 0.85rem;
+  padding: 6px 10px;
+}
+.danger {
+  background: transparent;
+  color: var(--error);
+  border-color: #e7c5cb;
+}
+a {
+  color: var(--navy);
+}
+:focus-visible {
+  outline: 3px solid #e3a525;
+  outline-offset: 3px;
+}
+[hidden] {
+  display: none !important;
+}
+.masthead {
+  height: 88px;
+  padding: 0 36px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+.brand {
+  font-size: 25px;
+  font-weight: 750;
+  letter-spacing: -1px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+.stamp {
+  font-family: Georgia, serif;
+  font-size: 34px;
+  font-style: italic;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 2px solid var(--navy);
+  border-radius: 8px;
+  line-height: 1;
+  padding-bottom: 5px;
+}
+.tagline {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+#logout {
+  margin-left: auto;
+}
+.welcome {
+  max-width: 750px;
+  margin: 9vh auto;
+  padding: 32px;
+  text-align: center;
+}
+.welcome h1 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(36px, 5vw, 58px);
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: -1.5px;
+  margin: 24px 0;
+}
+.welcome p {
+  max-width: 470px;
+  margin: 20px auto;
+  line-height: 1.7;
+  font-size: 17px;
+}
+.welcome .footnote {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 48px;
+}
+.postmark {
+  display: grid;
+  place-items: center;
+  margin: auto;
+  width: 72px;
+  height: 72px;
+  border: 1px solid #aec4d3;
+  border-radius: 50%;
+  font-family: Georgia, serif;
+  font-size: 44px;
+  color: var(--navy);
+  background: #e4eff7;
+}
+.workspace {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  min-height: calc(100vh - 140px);
+}
+aside {
+  padding: 26px 18px;
+  border-right: 1px solid var(--line);
+}
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+h2 {
+  font-size: 17px;
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+.section-heading h2 {
+  font-size: 15px;
+}
+#accounts {
+  display: grid;
+  gap: 6px;
+}
+#accounts button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: var(--ink);
+  padding: 13px 12px;
+  overflow-wrap: anywhere;
+  font-weight: 500;
+}
+#accounts button.selected {
+  background: #dce9f3;
+  color: var(--navy);
+  box-shadow: inset 3px 0 var(--navy);
+}
+#accounts small {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.aside-note {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 40px 12px;
+}
+.mailspace {
+  background: var(--paper);
+  min-width: 0;
+}
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 28px 32px;
+  min-height: 119px;
+  border-bottom: 1px solid var(--line);
+}
+h1 {
+  font-size: 25px;
+  letter-spacing: -0.7px;
+  margin: 0;
+}
+.muted {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.toolbar p {
+  margin: 5px 0 0;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.mail-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--line);
+}
+.mail-controls label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.mail-controls select {
+  width: 180px;
+}
+.mail-grid {
+  display: grid;
+  grid-template-columns: minmax(250px, 35%) minmax(0, 1fr);
+  min-height: 480px;
+}
+.message-column {
+  border-right: 1px solid var(--line);
+}
+.messages {
+  max-height: 70vh;
+  overflow: auto;
+}
+.messages .message {
+  display: block;
+  border-radius: 0;
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  color: var(--ink);
+  border: 0;
+  border-bottom: 1px solid #e1e8ee;
+  padding: 20px 24px;
+  font-weight: 400;
+}
+.messages .message:hover {
+  background: #edf4f9;
+  filter: none;
+}
+.message strong,
+.message small {
+  display: block;
+}
+.message strong {
+  margin: 6px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.message small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.reader {
+  padding: 32px;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.reader h2 {
+  font-size: 24px;
+  line-height: 1.3;
+  margin-bottom: 12px;
+}
+.reader pre {
+  font-family: inherit;
+  white-space: pre-wrap;
+  font-size: 15px;
+  line-height: 1.8;
+  max-width: 75ch;
+}
+.reader .actions {
+  margin: 24px 0;
+}
+.empty {
+  padding: 60px 28px;
+  color: var(--muted);
+  max-width: 420px;
+  margin: auto;
+}
+.empty h2 {
+  color: var(--ink);
+  font-family: Georgia, serif;
+  font-weight: 400;
+  font-size: 26px;
+}
+.empty p {
+  line-height: 1.7;
+  font-size: 14px;
+}
+.reader > .empty {
+  margin-top: 35px;
+}
+footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 36px;
+  font-size: 12px;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+}
+#notice {
+  margin: 0;
+  padding: 14px 36px;
+  background: var(--blue);
+  line-height: 1.6;
+}
+#notice.error {
+  background: #fae9ed;
+  color: var(--error);
+}
+dialog {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 20px 100px #17384e33;
+  max-width: 700px;
+  width: calc(100% - 32px);
+  padding: 28px;
+  color: var(--ink);
+  max-height: 90vh;
+}
+dialog::backdrop {
+  background: #163b5366;
+}
+.dialog-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.dialog-heading h2 {
+  font-size: 24px;
+}
+.dialog-heading button {
+  font-size: 24px;
+  padding: 0;
+  width: 40px;
+}
+dialog p {
+  line-height: 1.6;
+}
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 12px 0;
+}
+input,
+select,
+textarea {
+  display: block;
+  width: 100%;
+  padding: 10px 11px;
+  border: 1px solid #b6c8d5;
+  background: #fff;
+  border-radius: 5px;
+  color: var(--ink);
+  margin-top: 6px;
+  min-height: 42px;
+}
+input[type='checkbox'] {
+  width: 18px;
+  min-height: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--navy);
+}
+.inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 18px;
+}
+fieldset {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  margin: 20px 0;
+  padding: 12px 18px;
+}
+legend {
+  font-weight: 600;
+  font-size: 14px;
+  padding: 0 8px;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+.form-error {
+  color: var(--error);
+  font-size: 14px;
+}
+.reader .attachment-note {
+  padding: 14px;
+  background: var(--canvas);
+  border-radius: 6px;
+  font-size: 13px;
+}
+#older {
+  margin: 16px;
+}
+@media (max-width: 1100px) {
+  .workspace {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+  .toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .mail-grid {
+    grid-template-columns: 1fr;
+  }
+  .message-column {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .messages {
+    max-height: 300px;
+  }
+  .reader > .empty {
+    margin-top: 0;
+  }
+  .reader {
+    padding: 24px;
+  }
+}
+@media (max-width: 650px) {
+  .masthead {
+    height: 72px;
+    padding: 0 18px;
+    gap: 12px;
+  }
+  .brand {
+    font-size: 22px;
+  }
+  .tagline {
+    display: none;
+  }
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+  aside {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 16px;
+  }
+  .section-heading {
+    margin-bottom: 12px;
+  }
+  #accounts {
+    display: flex;
+    overflow: auto;
+  }
+  #accounts button {
+    min-width: 160px;
+  }
+  .aside-note {
+    display: none;
+  }
+  .toolbar {
+    padding: 22px 18px;
+  }
+  .toolbar h1 {
+    font-size: 22px;
+  }
+  .mail-controls {
+    flex-wrap: wrap;
+    padding: 14px 18px;
+  }
+  .mail-controls select {
+    width: 140px;
+  }
+  .actions button {
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  dialog {
+    padding: 20px;
+  }
+  footer {
+    padding: 16px 18px;
+  }
+  .welcome {
+    margin: 3vh auto;
+  }
+  #notice {
+    padding: 12px 18px;
+  }
+}

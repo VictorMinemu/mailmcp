@@ -1,0 +1,6 @@
+{$MAILMCP_DOMAIN} {
+    request_body {
+        max_size 256KB
+    }
+    reverse_proxy mailmcp:3210
+}

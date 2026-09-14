@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MailMCP — Tu correo, conectado</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header class="masthead">
+      <a href="/" class="brand" aria-label="MailMCP inicio"
+        ><span class="stamp" aria-hidden="true">m</span>MailMCP</a
+      ><span class="tagline">Tu correo, conectado.</span
+      ><button id="logout" class="quiet" hidden>Cerrar sesión</button>
+    </header>
+    <p id="notice" role="status" aria-live="polite" hidden></p>
+    <main id="welcome" class="welcome">
+      <div class="postmark" aria-hidden="true">@</div>
+      <h1>Un lugar para<br />tus cuentas de correo.</h1>
+      <p>Conecta el correo que ya usas. Consúltalo aquí o trabaja con él desde tu asistente.</p>
+      <a id="login" class="button" href="/auth/login" hidden>Iniciar sesión</a
+      ><button id="redeem" hidden>Abrir mi sesión</button>
+      <p id="local-help" class="muted" hidden>
+        Pide a tu asistente que abra MailMCP con la herramienta <code>web_open</code>.
+      </p>
+      <p class="footnote">Conectamos tus cuentas existentes. No ofrecemos direcciones de correo.</p>
+    </main>
+    <main id="workspace" class="workspace" hidden>
+      <aside>
+        <div class="section-heading">
+          <h2>Mis cuentas</h2>
+          <button id="add-account" class="small" aria-label="Añadir cuenta">+ Añadir</button>
+        </div>
+        <nav id="accounts" aria-label="Cuentas de correo"></nav>
+        <p class="aside-note">Tus conexiones se guardan cifradas.</p>
+      </aside>
+      <section class="mailspace">
+        <div class="toolbar">
+          <div>
+            <h1 id="account-title">Empieza con una cuenta</h1>
+            <p id="account-address" class="muted">Conecta un buzón existente para ver tu correo.</p>
+          </div>
+          <div class="actions" id="account-actions" hidden>
+            <button id="verify" class="quiet">Probar conexión</button
+            ><button id="edit-account" class="quiet">Configuración</button
+            ><button id="compose">Redactar</button>
+          </div>
+        </div>
+        <div id="mail-controls" class="mail-controls" hidden>
+          <label
+            >Carpeta
+            <select id="folder">
+              <option>INBOX</option>
+            </select></label
+          ><button id="refresh" class="quiet">Actualizar</button
+          ><button id="create-folder" class="quiet">Nueva carpeta</button>
+        </div>
+        <div class="mail-grid">
+          <section class="message-column" aria-label="Lista de mensajes">
+            <div id="messages" class="messages">
+              <div class="empty">
+                <h2>Tu correo empieza aquí.</h2>
+                <p>
+                  Añade una cuenta IMAP, POP3 o SMTP. Necesitarás los datos de conexión de tu
+                  proveedor.
+                </p>
+              </div>
+            </div>
+            <button id="older" class="quiet" hidden>Mensajes anteriores</button>
+          </section>
+          <article id="reader" class="reader">
+            <div class="empty">
+              <h2>Espacio para leer.</h2>
+              <p>Selecciona un mensaje para abrirlo.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+    <dialog id="account-dialog">
+      <form id="account-form">
+        <div class="dialog-heading">
+          <h2 id="account-form-title">Conectar una cuenta</h2>
+          <button type="button" class="quiet close-dialog" aria-label="Cerrar">×</button>
+        </div>
+        <p>Usa los datos de una cuenta que ya existe en tu proveedor.</p>
+        <div class="form-grid">
+          <label
+            >Nombre de la cuenta<input
+              name="label"
+              required
+              maxlength="256"
+              placeholder="Trabajo" /></label
+          ><label
+            >Dirección de correo<input
+              name="email"
+              type="email"
+              required
+              placeholder="tu@ejemplo.com" /></label
+          ><label
+            >Nombre del remitente<input
+              name="senderName"
+              required
+              maxlength="256"
+              placeholder="Tu nombre" /></label
+          ><label>Responder a (opcional)<input name="replyTo" type="email" /></label>
+        </div>
+        <fieldset>
+          <legend>Correo entrante</legend>
+          <div class="form-grid">
+            <label
+              >Protocolo<select name="incomingProtocol">
+                <option value="imap">IMAP</option>
+                <option value="pop3">POP3</option>
+                <option value="none">Sin correo entrante</option>
+              </select></label
+            ><label
+              >Seguridad<select name="incomingSecurity">
+                <option value="tls">TLS</option>
+                <option value="starttls">STARTTLS (solo IMAP)</option>
+              </select></label
+            ><label
+              >Servidor<input
+                name="incomingHost"
+                placeholder="imap.ejemplo.com"
+                autocomplete="off" /></label
+            ><label
+              >Puerto<input
+                name="incomingPort"
+                type="number"
+                min="1"
+                max="65535"
+                value="993" /></label
+            ><label>Usuario<input name="incomingUsername" autocomplete="off" /></label
+            ><label
+              >Contraseña de aplicación<input
+                name="incomingPassword"
+                type="password"
+                autocomplete="new-password"
+            /></label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>
+            <label class="inline"
+              ><input name="smtpEnabled" type="checkbox" checked /> Correo saliente (SMTP)</label
+            >
+          </legend>
+          <div class="form-grid">
+            <label
+              >Servidor<input
+                name="smtpHost"
+                placeholder="smtp.ejemplo.com"
+                autocomplete="off" /></label
+            ><label
+              >Puerto<input name="smtpPort" type="number" min="1" max="65535" value="465" /></label
+            ><label
+              >Seguridad<select name="smtpSecurity">
+                <option value="tls">TLS</option>
+                <option value="starttls">STARTTLS</option>
+              </select></label
+            ><label>Usuario<input name="smtpUsername" autocomplete="off" /></label
+            ><label
+              >Contraseña de aplicación<input
+                name="smtpPassword"
+                type="password"
+                autocomplete="new-password"
+            /></label>
+          </div>
+        </fieldset>
+        <p class="muted">
+          Al editar, deja la contraseña vacía para conservar una conexión sin cambios. Cambiar la
+          dirección aquí no renombra tu buzón en el proveedor.
+        </p>
+        <p id="account-error" class="form-error" role="alert"></p>
+        <div class="dialog-actions">
+          <button type="button" id="remove-account" class="danger" hidden>Eliminar conexión</button
+          ><button type="submit">Guardar cuenta</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="compose-dialog">
+      <form id="compose-form">
+        <div class="dialog-heading">
+          <h2>Nuevo mensaje</h2>
+          <button type="button" class="quiet close-dialog" aria-label="Cerrar">×</button>
+        </div>
+        <p id="compose-from" class="muted"></p>
+        <label
+          >Para<input
+            name="to"
+            type="email"
+            multiple
+            required
+            placeholder="destinatario@ejemplo.com" /></label
+        ><label>Asunto<input name="subject" required maxlength="256" /></label
+        ><label
+          >Mensaje<textarea name="text" rows="12" required maxlength="100000"></textarea></label
+        ><label class="inline"
+          ><input name="confirm" type="checkbox" required /> He revisado los destinatarios y el
+          mensaje.</label
+        >
+        <p id="compose-error" class="form-error" role="alert"></p>
+        <div class="dialog-actions"><button type="submit">Enviar mensaje</button></div>
+      </form>
+    </dialog>
+    <footer>MailMCP <span>Software abierto para tu correo.</span></footer>
+  </body>
+</html>

@@ -1,0 +1,48 @@
+{
+  "name": "mailmcp",
+  "version": "0.1.0",
+  "description": "Self-hosted MCP mail server with encrypted accounts and a token-authenticated web client",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.17.0"
+  },
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "dev": "node --env-file=.env --import tsx src/index.ts",
+    "start": "node --env-file=.env dist/index.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "tsx --test tests/*.test.ts",
+    "check": "npm run typecheck && npm test && npm run build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.0.0",
+    "imapflow": "^2.0.3",
+    "ipaddr.js": "^2.5.0",
+    "jose": "^6.2.12",
+    "mailparser": "^3.9.26",
+    "nodemailer": "^10.0.10",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "^2.0.0",
+    "@types/mailparser": "^3.4.6",
+    "@types/node": "^22.20.2",
+    "@types/nodemailer": "^8.0.1",
+    "prettier": "^3.9.6",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VictorMinemu/mailmcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/VictorMinemu/mailmcp/issues"
+  },
+  "homepage": "https://github.com/VictorMinemu/mailmcp#readme"
+}

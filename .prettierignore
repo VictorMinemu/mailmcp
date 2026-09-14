@@ -1,0 +1,8 @@
+node_modules
+dist
+data
+output
+.playwright-cli
+package-lock.json
+.env
+.env.*

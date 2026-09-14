@@ -1,0 +1,258 @@
+import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { readFile } from 'node:fs/promises';
+import { createMcpHandler } from '@modelcontextprotocol/server';
+import { z, ZodError } from 'zod';
+import type { Config } from './config.js';
+import { createMcp, type Services } from './mcp.js';
+import { RateLimit } from './auth.js';
+import { AppError, publicError } from './errors.js';
+import type { IdentityProvider } from './oidc.js';
+import { idSchema, line } from './schemas.js';
+
+const json = (res: ServerResponse, value: unknown, status = 200) => {
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(value));
+};
+const cookieValue = (req: IncomingMessage, name: string) =>
+  req.headers.cookie
+    ?.split(';')
+    .map((c) => c.trim())
+    .find((c) => c.startsWith(`${name}=`))
+    ?.slice(name.length + 1);
+async function body(req: IncomingMessage) {
+  if (!(req.headers['content-type'] ?? '').startsWith('application/json'))
+    throw new AppError('CONTENT_TYPE', 'Use application/json.', 415);
+  const chunks: Buffer[] = [];
+  let length = 0;
+  for await (const chunk of req) {
+    length += chunk.length;
+    if (length > 262_144) throw new AppError('BODY_TOO_LARGE', 'Request body exceeds 256 KB.', 413);
+    chunks.push(chunk);
+  }
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown;
+  } catch {
+    throw new AppError('INVALID_JSON', 'Invalid JSON.');
+  }
+}
+
+export function createWeb(config: Config, services: Services, identity?: IdentityProvider) {
+  const hosted = config.mode === 'hosted',
+    sessionName = hosted ? '__Host-mailmcp' : 'mailmcp';
+  const bindingName = '__Host-mailmcp-login';
+  const sessionCookie = (token: string, maxAge = 3600) =>
+    `${sessionName}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${hosted ? '; Secure' : ''}`;
+  const loginCookie = (binding: string, maxAge = 300) =>
+    `${bindingName}=${binding}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=${maxAge}`;
+  const authLimit = new RateLimit(300, 60_000),
+    publicLimit = new RateLimit(60, 60_000),
+    apiLimit = new RateLimit(120, 60_000);
+  const assets: Record<string, [string, string]> = {
+    '/favicon.svg': ['favicon.svg', 'image/svg+xml'],
+    '/': ['index.html', 'text/html'],
+    '/app.js': ['app.js', 'text/javascript'],
+    '/style.css': ['style.css', 'text/css'],
+  };
+  const handler = createMcpHandler(
+    (ctx) => {
+      const owner = ctx.authInfo?.extra?.owner;
+      if (typeof owner !== 'string')
+        throw new AppError('UNAUTHORIZED', 'Authentication required.', 401);
+      return createMcp(services, owner);
+    },
+    { maxSubscriptions: 0 },
+  );
+  const server = createServer(async (req, res) => {
+    res.setHeader('cache-control', 'no-store');
+    res.setHeader('x-content-type-options', 'nosniff');
+    res.setHeader('referrer-policy', 'no-referrer');
+    res.setHeader('x-frame-options', 'DENY');
+    res.setHeader(
+      'content-security-policy',
+      "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+    );
+    if (hosted) res.setHeader('strict-transport-security', 'max-age=31536000');
+    try {
+      if (req.headers.host !== config.hostname)
+        throw new AppError('INVALID_HOST', 'Unexpected request host.', 403);
+      const origin = req.headers.origin;
+      if (origin && origin !== config.origin)
+        throw new AppError('INVALID_ORIGIN', 'Cross-origin access is not allowed.', 403);
+      const url = new URL(req.url ?? '/', config.origin),
+        path = url.pathname;
+      if (url.origin !== config.origin)
+        throw new AppError('INVALID_HOST', 'Unexpected request URL.', 403);
+      if (req.method === 'GET' && path === '/healthz') return json(res, { status: 'ok' });
+      if (
+        req.method === 'GET' &&
+        (path === '/.well-known/oauth-protected-resource' ||
+          path === '/.well-known/oauth-protected-resource/mcp') &&
+        hosted
+      )
+        return json(res, {
+          resource: `${config.origin}/mcp`,
+          authorization_servers: [config.issuer],
+          scopes_supported: [config.scope],
+          bearer_methods_supported: ['header'],
+        });
+      if (path === '/mcp') {
+        if (!hosted || !identity) throw new AppError('NOT_FOUND', 'Use stdio in local mode.', 404);
+        authLimit.check('mcp');
+        const authorization = req.headers.authorization;
+        if (!authorization?.startsWith('Bearer ') || authorization.length > 16_000)
+          throw new AppError('UNAUTHORIZED', 'OAuth bearer token required.', 401);
+        const token = authorization.slice(7),
+          owner = await identity.bearer(token);
+        apiLimit.check(owner);
+        const parsedBody = req.method === 'POST' ? await body(req) : undefined;
+        const headers = new Headers();
+        for (const [key, value] of Object.entries(req.headers))
+          if (typeof value === 'string') headers.set(key, value);
+        const request = new Request(url, {
+          method: req.method,
+          headers,
+          ...(parsedBody !== undefined ? { body: JSON.stringify(parsedBody) } : {}),
+        });
+        const response = await handler.fetch(request, {
+          authInfo: { token, clientId: 'oauth-user', scopes: [config.scope], extra: { owner } },
+          parsedBody,
+        });
+        for (const [key, value] of response.headers) res.setHeader(key, value);
+        res.writeHead(response.status);
+        res.end(Buffer.from(await response.arrayBuffer()));
+        return;
+      }
+      if (req.method === 'GET' && path === '/auth/login' && hosted && identity) {
+        // The reverse proxy enforces client-IP limits; forwarded headers are never trusted here.
+        publicLimit.check('oidc');
+        const login = await identity.begin();
+        res.setHeader('set-cookie', loginCookie(login.binding));
+        res.writeHead(302, { location: login.url });
+        res.end();
+        return;
+      }
+      if (req.method === 'GET' && path === '/auth/callback' && hosted && identity) {
+        publicLimit.check('callback');
+        const owner = await identity.finish(url.searchParams, cookieValue(req, bindingName));
+        res.setHeader('set-cookie', [
+          sessionCookie(services.auth.session(owner)),
+          loginCookie('', 0),
+        ]);
+        res.writeHead(303, { location: '/' });
+        res.end();
+        return;
+      }
+      if (req.method === 'GET' && path === '/api/config')
+        return json(res, { hosted, loginUrl: hosted ? '/auth/login' : null });
+      if (req.method === 'POST' && path === '/api/redeem') {
+        if (origin !== config.origin)
+          throw new AppError('CSRF', 'Same-origin request required.', 403);
+        publicLimit.check('redeem');
+        const p = z
+          .object({ token: z.string().regex(/^[A-Za-z0-9_-]{43}$/) })
+          .strict()
+          .parse(await body(req));
+        res.setHeader('set-cookie', sessionCookie(services.auth.redeem(p.token)));
+        return json(res, { authenticated: true });
+      }
+      if (path.startsWith('/api/')) {
+        const token = cookieValue(req, sessionName),
+          owner = services.auth.owner(token);
+        apiLimit.check(owner);
+        if (!['GET', 'HEAD'].includes(req.method ?? '') && origin !== config.origin)
+          throw new AppError('CSRF', 'Same-origin request required.', 403);
+        if (req.method === 'POST' && path === '/api/logout') {
+          services.auth.logout(token!);
+          res.setHeader('set-cookie', sessionCookie('', 0));
+          return json(res, { loggedOut: true });
+        }
+        if (req.method === 'GET' && path === '/api/accounts')
+          return json(res, services.accounts.list(owner));
+        if (req.method === 'POST' && path === '/api/accounts')
+          return json(res, services.accounts.add(owner, await body(req)), 201);
+        const accountPath = /^\/api\/accounts\/([^/]+)$/.exec(path);
+        if (accountPath) {
+          const id = z.uuid().parse(accountPath[1]);
+          if (req.method === 'PATCH')
+            return json(res, services.accounts.update(owner, id, await body(req)));
+          if (req.method === 'DELETE') {
+            z.object({ confirm: z.literal(true) })
+              .strict()
+              .parse(await body(req));
+            return json(res, services.accounts.remove(owner, id));
+          }
+        }
+        if (req.method === 'POST' && path.startsWith('/api/mail/')) {
+          const input = await body(req);
+          let result: unknown;
+          switch (path.slice('/api/mail/'.length)) {
+            case 'verify':
+              result = await services.mail.verify(owner, idSchema.parse(input).accountId);
+              break;
+            case 'folders':
+              result = await services.mail.folders(owner, idSchema.parse(input).accountId);
+              break;
+            case 'list':
+              result = await services.mail.list(owner, input);
+              break;
+            case 'attachments':
+              result = await services.mail.attachments(owner, input);
+              break;
+            case 'attachment':
+              result = await services.mail.attachment(owner, input);
+              break;
+            case 'read':
+              result = await services.mail.read(owner, input);
+              break;
+            case 'send':
+              result = await services.mail.send(owner, input);
+              break;
+            case 'flag':
+              result = await services.mail.flag(owner, input);
+              break;
+            case 'move':
+              result = await services.mail.move(owner, input);
+              break;
+            case 'create-folder': {
+              const p = idSchema.extend({ path: line }).parse(input);
+              result = await services.mail.createFolder(owner, p.accountId, p.path);
+              break;
+            }
+            default:
+              throw new AppError('NOT_FOUND', 'Endpoint not found.', 404);
+          }
+          return json(res, result);
+        }
+        throw new AppError('NOT_FOUND', 'Endpoint not found.', 404);
+      }
+      const asset = assets[path];
+      if (req.method === 'GET' && asset) {
+        const file = await readFile(new URL(`../web/${asset[0]}`, import.meta.url));
+        res.writeHead(200, { 'content-type': `${asset[1]}; charset=utf-8` });
+        res.end(file);
+        return;
+      }
+      throw new AppError('NOT_FOUND', 'Not found.', 404);
+    } catch (error) {
+      if (res.headersSent) {
+        res.end();
+        return;
+      }
+      const status =
+        error instanceof AppError ? error.status : error instanceof ZodError ? 400 : 500;
+      if (status === 401 && req.url?.startsWith('/mcp'))
+        res.setHeader(
+          'www-authenticate',
+          `Bearer resource_metadata="${config.origin}/.well-known/oauth-protected-resource/mcp", scope="${config.scope}"`,
+        );
+      json(res, publicError(error), status);
+    }
+  });
+  server.requestTimeout = 60_000;
+  server.headersTimeout = 15_000;
+  server.keepAliveTimeout = 5000;
+  server.on('close', () => {
+    void handler.close();
+  });
+  return server;
+}
