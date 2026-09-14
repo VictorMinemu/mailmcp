@@ -21,4 +21,6 @@ Verified locally on 2026-09-14. This is a record of observed checks, not a claim
 
 The browser fixture used fake accounts and synthetic MIME messages. No real email was sent. Attachment parsing used a controlled IMAP adapter; POP3 framing used a stream fixture. The OIDC tests use signed synthetic JWTs and a controlled key set. Live IMAP, POP3, SMTP, provider OAuth client onboarding, DNS/TLS proxy configuration and multi-user sign-in with a selected real identity provider still need deployment-specific validation.
 
-The browser review also found and fixed handling of a new fragment login token in an already-open tab. Tokens are removed from the visible URL and explicitly redeemed; expired links are rejected.
+The browser review also found and fixed handling of a new fragment login token in an already-open tab. A fresh document clears the previous identity’s UI and pending requests. Tokens are removed from the visible URL and explicitly redeemed; expired links are rejected.
+
+GitHub CI on the initial published commit passed on Node.js 22 and 24, including the container build: [initial CI run](https://github.com/VictorMinemu/mailmcp/actions/runs/34876484302).

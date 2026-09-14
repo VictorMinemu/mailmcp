@@ -10,18 +10,12 @@ const state = {
 };
 let loginToken = new URLSearchParams(location.hash.slice(1)).get('token');
 if (location.hash) history.replaceState(null, '', location.pathname);
+// A new login link starts a fresh document: no previous user's mail, drafts or
+// in-flight responses can survive a switch of browser identity.
 window.addEventListener('hashchange', () => {
-  const token = new URLSearchParams(location.hash.slice(1)).get('token');
-  if (location.hash) history.replaceState(null, '', location.pathname);
-  if (token) {
-    loginToken = token;
-    $('welcome').hidden = false;
-    $('workspace').hidden = true;
-    $('redeem').hidden = false;
-    $('login').hidden = true;
-    notice('');
-  }
+  if (new URLSearchParams(location.hash.slice(1)).has('token')) location.reload();
 });
+
 function notice(message, error = false) {
   $('notice').textContent = message;
   $('notice').className = error ? 'error' : '';
