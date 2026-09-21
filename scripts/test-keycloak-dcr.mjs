@@ -1,7 +1,7 @@
 // Live identity regression: uses only synthetic clients/user and removes them in finally.
 // Run against a disposable Keycloak first. See docs/HOSTING.md.
 import assert from 'node:assert/strict';
-import { randomBytes, createHash } from 'node:crypto';
+import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { adminApi } from './configure-keycloak-dcr.mjs';
@@ -224,6 +224,32 @@ try {
         }),
       );
       assert.equal((await mcp.listTools()).tools.length, 16);
+      if (process.env.MAILMCP_TEST_SEND_ATTACHMENTS === '1') {
+        const tool = (await mcp.listTools()).tools.find((entry) => entry.name === 'messages_send');
+        assert.ok(tool.inputSchema.properties.attachments);
+        // Unknown account for the synthetic user: exercise the entire upload path without sending mail.
+        const result = await mcp.callTool({
+          name: 'messages_send',
+          arguments: {
+            accountId: randomUUID(),
+            to: ['fixture@example.com'],
+            subject: 'Upload regression',
+            text: 'Synthetic data only',
+            confirm: true,
+            attachments: [
+              { filename: '25MB.bin', contentBase64: Buffer.alloc(25_000_000).toString('base64') },
+            ],
+          },
+        });
+        assert.equal(result.isError, true);
+        assert.equal(
+          JSON.parse(result.content.find((item) => item.type === 'text').text).code,
+          'NOT_FOUND',
+        );
+        console.log(
+          'PASS production MCP accepts 25 MB attachment through the proxy and enforces account ownership',
+        );
+      }
       if (process.env.MAILMCP_TEST_PUBLIC_PROVIDERS === '1') {
         // Configuration-only checks: never authenticate to a real mailbox or send mail.
         const call = async (name, args) => {

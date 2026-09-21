@@ -88,6 +88,23 @@ Maximum message size is 10 MB; maximum downloaded attachment size is 5 MB. Overs
 
 `messages_list` accepts `accountId`, optional `folder` (INBOX), `limit` (1–50, default 20) and `before` (use returned `nextBefore`). The IMAP cursor is a sequence position; mailbox mutations can shift pagination. Message reads/edits/downloads use UIDs and UIDVALIDITY to avoid reusing an ID from a different mailbox generation. POP3 lists the latest UIDLs; folder operations, flags, moving and IMAP-style pagination are unsupported.
 
-`messages_send` takes `accountId`, `to` (up to 20 addresses), `subject`, `text` (up to 100,000 characters), and `confirm: true`. It does not currently upload attachments. Always inspect accepted and rejected recipients. A network error does not prove that an SMTP server rejected a message: check the provider before retrying to avoid duplicates.
+`messages_send` takes `accountId`, `to` (up to 20 addresses), `subject`, `text` (up to 100,000 characters), and `confirm: true`. It also accepts optional `attachments` (up to 10), each with `filename`, `contentBase64` and optional `contentType` (defaults to `application/octet-stream`). Limits are **25,000,000 decoded bytes per file and total per message**. Use standard padded base64, without a data-URL prefix. Local paths and URLs are not accepted; the MCP client reads the file and provides its bytes. SMTP providers may impose a lower limit on the final MIME message, which grows when encoded. Always inspect accepted and rejected recipients. A network error does not prove that an SMTP server rejected a message: check the provider before retrying to avoid duplicates.
+
+Example `messages_send` arguments:
+
+```json
+{
+  "accountId": "ACCOUNT_UUID",
+  "to": ["recipient@example.com"],
+  "subject": "Document",
+  "text": "Please find the file attached.",
+  "attachments": [
+    { "filename": "hola.txt", "contentType": "text/plain", "contentBase64": "SG9sYQ==" }
+  ],
+  "confirm": true
+}
+```
+
+Review recipients, message and attachments before confirming. The server does not persist uploaded files. The authenticated `/api/mail/send` endpoint accepts the same schema; the browser compose form does not yet include a file picker.
 
 Resources: `mailmcp://accounts` and `mailmcp://capabilities`. Prompt: `draft_reply(context, goal)` drafts for review and never sends. No sampling or model API is invoked by MailMCP itself.

@@ -281,6 +281,115 @@ test('hosted HTTP transport scopes every MCP request and web link to the OAuth s
     });
     assert.equal(response.status, 404, await response.text());
     assert.equal(accounts.list('alice').length, 1);
+    // A full-size upload reaches ownership checks through the real HTTP MCP transport.
+    // Bob cannot send from Alice's account, so this never contacts an SMTP provider.
+    const upload = {
+      accountId: created.id,
+      to: ['recipient@example.com'],
+      subject: 'Upload fixture',
+      text: 'Synthetic file',
+      confirm: true,
+      attachments: [
+        { filename: 'large.bin', contentBase64: Buffer.alloc(25_000_000).toString('base64') },
+      ],
+    };
+    const uploaded = await bob.callTool({ name: 'messages_send', arguments: upload });
+    assert.equal(uploaded.isError, true);
+    assert.equal(parsed(uploaded).code, 'NOT_FOUND');
+    const apiHeaders = { host, cookie, origin, 'content-type': 'application/json' };
+    const smallUpload = {
+      ...upload,
+      attachments: [
+        { filename: 'file.bin', contentBase64: Buffer.alloc(300_000).toString('base64') },
+      ],
+    };
+    assert.equal(
+      (
+        await rawFetch(`${base}/api/mail/send`, {
+          method: 'POST',
+          headers: apiHeaders,
+          body: JSON.stringify(smallUpload),
+        })
+      ).status,
+      404,
+    );
+    assert.equal(
+      (
+        await rawFetch(`${base}/api/accounts`, {
+          method: 'POST',
+          headers: apiHeaders,
+          body: JSON.stringify(smallUpload),
+        })
+      ).status,
+      413,
+    );
+    // Reject declared oversize before buffering, and authenticate before inspecting uploads.
+    for (const [authorization, expected] of [
+      ['Bearer bob-token', 413],
+      ['', 401],
+    ] as const) {
+      assert.equal(
+        (
+          await rawFetch(`${base}/mcp`, {
+            method: 'POST',
+            headers: {
+              host,
+              authorization,
+              'content-type': 'application/json',
+              'content-length': '40000001',
+            },
+          })
+        ).status,
+        expected,
+      );
+    }
+    // Keep two authenticated sends pending to verify memory reservations and cleanup.
+    const originalSend = services.mail.send;
+    const releases: (() => void)[] = [];
+    let entered!: () => void;
+    (services.mail as any).send = async () => {
+      const wait = new Promise<void>((resolve) => releases.push(resolve));
+      entered();
+      await wait;
+      return { accepted: [], rejected: [] };
+    };
+    const pending: Promise<Response>[] = [];
+    const headersFor = (owner: string) => ({
+      ...apiHeaders,
+      cookie: `__Host-mailmcp=${auth.session(owner)}`,
+    });
+    try {
+      for (const owner of ['alice', 'bob']) {
+        const started = new Promise<void>((resolve) => {
+          entered = resolve;
+        });
+        pending.push(
+          rawFetch(`${base}/api/mail/send`, {
+            method: 'POST',
+            headers: headersFor(owner),
+            body: '{}',
+          }),
+        );
+        await started;
+      }
+      for (const owner of ['alice', 'charlie'])
+        assert.equal(
+          (
+            await rawFetch(`${base}/api/mail/send`, {
+              method: 'POST',
+              headers: headersFor(owner),
+              body: '{}',
+            })
+          ).status,
+          429,
+        );
+    } finally {
+      releases.forEach((release) => release());
+      for (const response of await Promise.all(pending)) assert.equal(response.status, 200);
+      services.mail.send = originalSend;
+    }
+    // Capacity must be returned after both application errors and oversized requests.
+    assert.deepEqual(parsed(await bob.callTool({ name: 'accounts_list', arguments: {} })), []);
   } finally {
     await alice.close();
     await bob.close();

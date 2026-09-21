@@ -1,4 +1,11 @@
 import { z } from 'zod';
+import {
+  MAX_ATTACHMENT_BASE64_LENGTH,
+  MAX_OUTGOING_ATTACHMENTS,
+  MAX_OUTGOING_TOTAL_BYTES,
+  base64Bytes,
+  validAttachmentBase64,
+} from './uploads.js';
 
 export const line = z
   .string()
@@ -66,12 +73,54 @@ export const readSchema = idSchema.extend({
   messageId: line,
   uidValidity: z.string().regex(/^\d+$/).optional(),
 });
-export const sendSchema = idSchema.extend({
-  to: z.array(z.email().max(254)).min(1).max(20),
-  subject: line,
-  text: z.string().min(1).max(100_000),
-  confirm: z.literal(true),
-});
+export const outgoingAttachmentSchema = z
+  .object({
+    filename: z
+      .string()
+      .trim()
+      .min(1)
+      .max(200)
+      .regex(/^[^/\\\x00-\x1f\x7f]+$/)
+      .refine((name) => name !== '.' && name !== '..')
+      .describe('Attachment filename only; no paths or control characters.'),
+    contentType: z
+      .string()
+      .max(127)
+      .regex(/^[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]*\/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]*$/)
+      .default('application/octet-stream')
+      .describe('MIME type, for example application/pdf.'),
+    contentBase64: z
+      .string()
+      .max(MAX_ATTACHMENT_BASE64_LENGTH)
+      .refine(
+        validAttachmentBase64,
+        'Attachment must contain canonical base64 encoding of at most 25 MB.',
+      )
+      .describe(
+        'File bytes encoded as standard padded base64, without a data: prefix. Maximum 25 MB decoded.',
+      ),
+  })
+  .strict();
+export const sendSchema = idSchema
+  .extend({
+    to: z.array(z.email().max(254)).min(1).max(20),
+    subject: line,
+    text: z.string().min(1).max(100_000),
+    attachments: z
+      .array(outgoingAttachmentSchema)
+      .max(MAX_OUTGOING_ATTACHMENTS)
+      .optional()
+      .describe(
+        'Optional files: at most 10, 25 MB each, 25 MB decoded total. Only inline bytes; no file paths or URLs.',
+      ),
+    confirm: z.literal(true),
+  })
+  .refine(
+    (p) =>
+      (p.attachments ?? []).reduce((total, a) => total + base64Bytes(a.contentBase64), 0) <=
+      MAX_OUTGOING_TOTAL_BYTES,
+    'Attachments exceed the 25 MB total limit.',
+  );
 export const flagSchema = idSchema.extend({
   folder: line.default('INBOX'),
   uid: z.number().int().positive(),

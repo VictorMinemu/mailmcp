@@ -280,6 +280,13 @@ export class Mail {
           to: p.to.map((address) => ({ address, name: '' })),
           subject: p.subject,
           text: p.text,
+          attachments: p.attachments?.map((attachment) => ({
+            filename: attachment.filename,
+            contentType: attachment.contentType,
+            content: Buffer.from(attachment.contentBase64, 'base64'),
+            contentDisposition: 'attachment',
+            contentTransferEncoding: 'base64',
+          })),
         });
         return { messageId: sent.messageId, accepted: sent.accepted, rejected: sent.rejected };
       } finally {

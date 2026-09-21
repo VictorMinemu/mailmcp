@@ -9,6 +9,7 @@ import { RateLimit } from './auth.js';
 import { AppError, publicError } from './errors.js';
 import type { IdentityProvider } from './oidc.js';
 import { idSchema, line } from './schemas.js';
+import { MAX_SEND_REQUEST_BYTES } from './uploads.js';
 
 const json = (res: ServerResponse, value: unknown, status = 200) => {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
@@ -20,14 +21,23 @@ const cookieValue = (req: IncomingMessage, name: string) =>
     .map((c) => c.trim())
     .find((c) => c.startsWith(`${name}=`))
     ?.slice(name.length + 1);
-async function body(req: IncomingMessage) {
+async function body(req: IncomingMessage, maxBytes = 262_144) {
   if (!(req.headers['content-type'] ?? '').startsWith('application/json'))
     throw new AppError('CONTENT_TYPE', 'Use application/json.', 415);
   const chunks: Buffer[] = [];
   let length = 0;
-  for await (const chunk of req) {
+  const tooLarge = () =>
+    new AppError(
+      'BODY_TOO_LARGE',
+      maxBytes === MAX_SEND_REQUEST_BYTES
+        ? 'Request body exceeds 40 MB.'
+        : 'Request body exceeds 256 KB.',
+      413,
+    );
+  if (Number(req.headers['content-length'] ?? 0) > maxBytes) throw tooLarge();
+  for await (const chunk of req.iterator({ destroyOnReturn: false })) {
     length += chunk.length;
-    if (length > 262_144) throw new AppError('BODY_TOO_LARGE', 'Request body exceeds 256 KB.', 413);
+    if (length > maxBytes) throw tooLarge();
     chunks.push(chunk);
   }
   try {
@@ -48,6 +58,17 @@ export function createWeb(config: Config, services: Services, identity?: Identit
   const authLimit = new RateLimit(300, 60_000),
     publicLimit = new RateLimit(60, 60_000),
     apiLimit = new RateLimit(120, 60_000);
+  // Reserve before buffering authenticated MCP/send bodies. Keep the lease through
+  // SMTP completion, since decoded attachments stay in memory until then.
+  const largeRequests = new Set<string>();
+  function reserveRequest(owner: string) {
+    if (largeRequests.size >= 2 || largeRequests.has(owner))
+      throw new AppError('BUSY', 'Too many concurrent mail operations.', 429);
+    largeRequests.add(owner);
+    return () => {
+      largeRequests.delete(owner);
+    };
+  }
   const assets: Record<string, [string, string]> = {
     '/favicon.svg': ['favicon.svg', 'image/svg+xml'],
     '/': ['index.html', 'text/html'],
@@ -78,6 +99,7 @@ export function createWeb(config: Config, services: Services, identity?: Identit
     { maxSubscriptions: 0 },
   );
   const server = createServer(async (req, res) => {
+    let releaseRequest: (() => void) | undefined;
     const locale = negotiateLanguage(req.headers['accept-language'], config.locale);
     res.setHeader('content-language', locale);
     res.setHeader('vary', 'Accept-Language');
@@ -122,14 +144,15 @@ export function createWeb(config: Config, services: Services, identity?: Identit
         const token = authorization.slice(7),
           owner = await identity.bearer(token);
         apiLimit.check(owner);
-        const parsedBody = req.method === 'POST' ? await body(req) : undefined;
+        if (req.method === 'POST') releaseRequest = reserveRequest(owner);
+        const parsedBody =
+          req.method === 'POST' ? await body(req, MAX_SEND_REQUEST_BYTES) : undefined;
         const headers = new Headers();
         for (const [key, value] of Object.entries(req.headers))
           if (typeof value === 'string') headers.set(key, value);
         const request = new Request(url, {
           method: req.method,
           headers,
-          ...(parsedBody !== undefined ? { body: JSON.stringify(parsedBody) } : {}),
         });
         const response = await handler.fetch(request, {
           authInfo: { token, clientId: 'oauth-user', scopes: [config.scope], extra: { owner } },
@@ -201,7 +224,11 @@ export function createWeb(config: Config, services: Services, identity?: Identit
           }
         }
         if (req.method === 'POST' && path.startsWith('/api/mail/')) {
-          const input = await body(req);
+          if (path === '/api/mail/send') releaseRequest = reserveRequest(owner);
+          const input = await body(
+            req,
+            path === '/api/mail/send' ? MAX_SEND_REQUEST_BYTES : 262_144,
+          );
           let result: unknown;
           switch (path.slice('/api/mail/'.length)) {
             case 'verify':
@@ -269,12 +296,15 @@ export function createWeb(config: Config, services: Services, identity?: Identit
       }
       const status =
         error instanceof AppError ? error.status : error instanceof ZodError ? 400 : 500;
+      if (!req.complete || status === 413 || status === 429) res.setHeader('connection', 'close');
       if (status === 401 && req.url?.startsWith('/mcp'))
         res.setHeader(
           'www-authenticate',
           `Bearer resource_metadata="${config.origin}/.well-known/oauth-protected-resource/mcp", scope="${config.scope}"`,
         );
       json(res, publicError(error, locale), status);
+    } finally {
+      releaseRequest?.();
     }
   });
   server.requestTimeout = 60_000;

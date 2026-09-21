@@ -14,6 +14,7 @@ MailMCP is open-source software with a **free hosted service at [mailmcp.org](ht
 - IMAP folders, message listing and reading, seen/starred flags, moving messages and creating folders.
 - POP3 over implicit TLS: UIDL listing and message retrieval, without deleting mail.
 - SMTP text messages with explicit confirmation. Supports TLS or mandatory STARTTLS.
+- **Send attachments through MCP**: up to 10 files, 25 MB per file and 25 MB total, using `messages_send`.
 - **List and download attachments through MCP**, returning an embedded binary resource; download the same attachments in the browser.
 - `web_open`: a one-time, 60-second URL opening a browser session for the authenticated MCP user.
 - Tools, account/capability resources and a drafting prompt using the official MCP TypeScript SDK.
@@ -101,6 +102,6 @@ npm run dev
 
 ## Current boundaries
 
-Single process with an encrypted file vault; no horizontal replicas. Incoming mail is fetched on demand, not synchronized or persisted. Sending does not append a copy to IMAP Sent (some SMTP providers do this themselves). No automatic retry of ambiguous SMTP failures. No HTML rendering, attachment uploads, mail-provider OAuth token refresh, sharing or invitations. The hosted service at mailmcp.org is a single-instance deployment.
+Single process with an encrypted file vault; no horizontal replicas. Incoming mail is fetched on demand, not synchronized or persisted. Sending does not append a copy to IMAP Sent (some SMTP providers do this themselves). No automatic retry of ambiguous SMTP failures. No HTML rendering, browser attachment picker, mail-provider OAuth token refresh, sharing or invitations. The hosted service at mailmcp.org is a single-instance deployment.
 
 See [the roadmap](docs/ROADMAP.md). MIT licensed.

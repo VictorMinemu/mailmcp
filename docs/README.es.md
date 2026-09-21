@@ -25,7 +25,7 @@ Configura el cliente MCP con rutas absolutas siguiendo el [README principal](../
 
 Usa `messages_list`, después `attachments_list` y finalmente `attachments_download` con el índice del archivo. El resultado incluye los bytes originales en un recurso binario MCP codificado en base64. El cliente MCP puede guardarlos como archivo. El panel ofrece un botón de descarga.
 
-Límites iniciales: mensajes de hasta 10 MB y adjuntos individuales de hasta 5 MB. Los archivos no se ejecutan, no se guardan en el servidor y no se analizan con antivirus.
+Límites de descarga: mensajes de hasta 10 MB y adjuntos individuales de hasta 5 MB. Los archivos no se ejecutan, no se guardan en el servidor y no se analizan con antivirus.
 
 ## Servicio alojado gratuito
 
@@ -42,3 +42,7 @@ Las invitaciones y cuentas compartidas quedan para versiones posteriores. El cif
 ## Idiomas
 
 La web está disponible en español e inglés, con detección del idioma del navegador y selector que guarda tu preferencia. Puedes cambiarlo dentro de los formularios sin perder lo escrito. El MCP admite `MAILMCP_LANGUAGE=es` en stdio y `Accept-Language: es` en HTTP; `web_open` permite elegir `language`. Los correos y adjuntos mantienen su contenido original. [Más información](LANGUAGES.md).
+
+## Enviar archivos adjuntos
+
+`messages_send` admite `attachments`: una lista con `filename`, `contentBase64` y `contentType` opcional. Hasta **25 MB por archivo, 25 MB en total por correo y 10 archivos** (MB decimal). El cliente MCP lee el archivo y lo codifica en base64 estándar; no se aceptan rutas ni URLs. Revisa el correo y los archivos antes de usar `confirm: true`. El proveedor SMTP puede imponer un límite menor sobre el mensaje MIME final. Consulta el ejemplo en [la referencia MCP](MCP.md).

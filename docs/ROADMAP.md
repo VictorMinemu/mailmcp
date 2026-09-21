@@ -2,7 +2,7 @@
 
 ## Initial foundation
 
-Existing account management; IMAP/POP3S/SMTP; authenticated local and hosted MCP; OIDC browser login; isolated accounts; encrypted persistence; token-based web access; MIME attachment listing/download; plain-text web client; tests, CI and deployment templates.
+Existing account management; IMAP/POP3S/SMTP; authenticated local and hosted MCP; OIDC browser login; isolated accounts; encrypted persistence; token-based web access; MIME attachment listing/download and sending via MCP; plain-text web client; tests, CI and deployment templates.
 
 ## Public service
 
@@ -10,7 +10,7 @@ The free hosted service runs at [https://mailmcp.org/](https://mailmcp.org/) on 
 
 ## Mail compatibility and usability
 
-Mail-provider OAuth grants and refresh, larger streaming attachments, sending attachments, full-text search, drafts/replies, Sent-folder behavior, pagination resilient to mailbox changes, richer folder management and optional hardened HTML viewing. No automatic rendering of downloaded active content.
+Mail-provider OAuth grants and refresh, larger streaming attachments, browser attachment picker, full-text search, drafts/replies, Sent-folder behavior, pagination resilient to mailbox changes, richer folder management and optional hardened HTML viewing. No automatic rendering of downloaded active content.
 
 ## Operations and growth
 
