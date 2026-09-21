@@ -224,6 +224,52 @@ try {
         }),
       );
       assert.equal((await mcp.listTools()).tools.length, 16);
+      if (process.env.MAILMCP_TEST_PUBLIC_PROVIDERS === '1') {
+        // Configuration-only checks: never authenticate to a real mailbox or send mail.
+        const call = async (name, args) => {
+          const result = await mcp.callTool({ name, arguments: args });
+          assert.ok(!result.isError, `MCP ${name} failed: ${JSON.stringify(result.content)}`);
+          return JSON.parse(result.content.find((item) => item.type === 'text').text);
+        };
+        for (const [incoming, outgoing] of [
+          ['imappro.zoho.eu', 'smtppro.zoho.eu'],
+          ['imap.zoho.eu', 'smtp.zoho.eu'],
+          ['imap.custom-provider.example', 'smtp.custom-provider.example'],
+        ]) {
+          const connection = {
+            username: `${name}@example.com`,
+            password: 'synthetic-not-a-mail-password',
+            security: 'tls',
+          };
+          const account = await call('accounts_add', {
+            label: 'Provider regression',
+            senderName: 'Test',
+            email: connection.username,
+            incoming: { ...connection, host: incoming, port: 993, protocol: 'imap' },
+            smtp: { ...connection, host: outgoing, port: 465 },
+          });
+          try {
+            assert.equal(account.incoming.host, incoming);
+            assert.equal(account.smtp.host, outgoing);
+            await call('accounts_update', {
+              accountId: account.id,
+              changes: {
+                incoming: {
+                  ...connection,
+                  host: 'pop.custom-provider.example',
+                  port: 995,
+                  protocol: 'pop3',
+                },
+              },
+            });
+          } finally {
+            await call('accounts_remove', { accountId: account.id, confirm: true });
+          }
+        }
+        console.log(
+          'PASS production account creation/update for Zoho EU and arbitrary public providers',
+        );
+      }
       console.log(
         'PASS production MCP initializes and lists 16 tools with dynamically registered client token',
       );

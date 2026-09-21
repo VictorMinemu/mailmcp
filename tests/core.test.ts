@@ -195,6 +195,115 @@ test('network policy rejects unlisted hosts and private or metadata IPs even if 
     await assert.rejects(mailEndpoint(host, new Set([host])), /private or reserved/);
 });
 
+test('all-provider mode permits account creation and updates without maintaining provider lists', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'mailmcp-providers-'));
+  const vault = new Vault(dir, randomBytes(32));
+  try {
+    const all = new Accounts(vault, new Set(['*']));
+    for (const [incoming, outgoing] of [
+      ['imappro.zoho.eu', 'smtppro.zoho.eu'],
+      ['imap.zoho.eu', 'smtp.zoho.eu'],
+      ['imap.custom-provider.example', 'smtp.custom-provider.example'],
+    ]) {
+      const created = all.add('alice', {
+        ...sample,
+        incoming: { ...sample.incoming, host: incoming },
+        smtp: {
+          host: outgoing,
+          port: 465,
+          security: 'tls',
+          username: sample.email,
+          password: 'synthetic-password',
+        },
+      });
+      assert.equal(created.incoming?.host, incoming);
+      assert.equal(created.smtp?.host, outgoing);
+      assert.equal(
+        all.update('alice', created.id, {
+          incoming: {
+            ...sample.incoming,
+            host: 'pop.custom-provider.example',
+            protocol: 'pop3',
+            port: 995,
+          },
+        }).incoming?.protocol,
+        'pop3',
+      );
+      assert.throws(
+        () =>
+          new Accounts(vault, new Set(['imap.example.com'])).update('alice', created.id, {
+            label: 'Restricted',
+          }),
+        /not enabled/,
+      );
+    }
+    assert.throws(() => new Accounts(vault, new Set()).add('alice', sample), /not enabled/);
+  } finally {
+    vault.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('all-provider DNS policy checks every answer, pins one public address and rechecks each connection', async () => {
+  const allowed = readConfig({
+    MAILMCP_MASTER_KEY: randomBytes(32).toString('hex'),
+    MAILMCP_ALLOWED_HOSTS: '*',
+  }).allowedHosts;
+  let lookups = 0;
+  const resolver = async (name: string) => {
+    assert.equal(name, 'imappro.zoho.eu');
+    lookups++;
+    return [{ address: lookups === 1 ? '8.8.8.8' : '127.0.0.1' }];
+  };
+  assert.deepEqual(await mailEndpoint('imappro.zoho.eu', allowed, resolver), {
+    address: '8.8.8.8',
+    servername: 'imappro.zoho.eu',
+  });
+  assert.equal(lookups, 1);
+  await assert.rejects(mailEndpoint('imappro.zoho.eu', allowed, resolver), /private or reserved/);
+  for (const address of [
+    '127.0.0.1',
+    '0.0.0.0',
+    '10.0.0.1',
+    '172.16.0.1',
+    '192.168.1.1',
+    '169.254.169.254',
+    '100.64.0.1',
+    '224.0.0.1',
+    '192.0.2.1',
+    '::1',
+    '::',
+    'fc00::1',
+    'fe80::1',
+    'ff02::1',
+    '2001:db8::1',
+    '::ffff:127.0.0.1',
+  ]) {
+    await assert.rejects(
+      mailEndpoint('mail.example', allowed, async () => [{ address }]),
+      /private or reserved/,
+    );
+    await assert.rejects(
+      mailEndpoint('mail.example', allowed, async () => [{ address: '8.8.8.8' }, { address }]),
+      /private or reserved/,
+    );
+  }
+  await assert.rejects(
+    mailEndpoint('mail.example', allowed, async () => []),
+    /private or reserved/,
+  );
+  assert.deepEqual(
+    await mailEndpoint('mail.example', allowed, async () => [{ address: '2606:4700:4700::1111' }]),
+    { address: '2606:4700:4700::1111', servername: 'mail.example' },
+  );
+  await assert.rejects(
+    mailEndpoint('unlisted.example', new Set(['listed.example']), async () => {
+      throw new Error('DNS must not run for rejected hosts');
+    }),
+    /not enabled/,
+  );
+});
+
 test('POP3 parser handles fragmented framing, dot unstuffing and binary bytes', async () => {
   const stream = new PassThrough(),
     parser = new PopLines(stream),

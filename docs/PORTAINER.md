@@ -11,7 +11,7 @@ In Portainer, create an administrator-owned stack named `mailmcp`, using this re
 - `MAILMCP_PROXY_NETWORK`: the existing Docker network used by Nginx Proxy Manager; this deployment defaults to `nginx-proxy-manager_default`.
 - `MAILMCP_OIDC_ISSUER` and `MAILMCP_OIDC_CLIENT_ID`: required. Configure the provider, redirect URI and MCP audience following [Hosting](HOSTING.md). Do not substitute a fake issuer or switch to local mode to get a deployment running.
 - `MAILMCP_OIDC_CLIENT_SECRET`: only if the provider uses a confidential browser client.
-- `MAILMCP_ALLOWED_HOSTS`: exact mail-provider hostnames approved by the operator. An empty value blocks all new outbound mail connections.
+- `MAILMCP_ALLOWED_HOSTS`: set to `*` to allow all public mail providers. Private and reserved addresses remain blocked and TLS certificates remain verified. To restrict an installation, use comma-separated exact hostnames instead; an empty value blocks all mail hosts. Update this stack variable as well as deploying the code when migrating from a fixed provider list.
 
 Before deploying, confirm the named proxy network exists and the repository revision has passed CI. One MailMCP process must own the data volume. See the vault lock/recovery limitations in [Hosting](HOSTING.md).
 

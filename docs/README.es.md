@@ -17,7 +17,7 @@ npm run setup
 npm run build
 ```
 
-Edita `.env` para permitir los servidores de correo de tus proveedores. Usa contraseñas de aplicación cuando sean necesarias. No se admite aún OAuth para conectar la cuenta del proveedor de correo; OAuth/OIDC sí se utiliza para entrar en el servicio MailMCP alojado.
+La instalación configura `MAILMCP_ALLOWED_HOSTS=*` para permitir todos los proveedores de correo públicos, incluidos Zoho EU y servidores de dominios propios. Las redes privadas, localhost y las direcciones reservadas siguen bloqueadas. Si quieres restringir tu instancia, sustituye `*` por una lista de nombres de servidor exactos separados por comas; el valor vacío bloquea todas las conexiones. Usa contraseñas de aplicación cuando sean necesarias. No se admite aún OAuth para conectar la cuenta del proveedor de correo; OAuth/OIDC sí se utiliza para entrar en el servicio MailMCP alojado.
 
 Configura el cliente MCP con rutas absolutas siguiendo el [README principal](../README.md). Pide al asistente que llame a `web_open`, abre el enlace y añade tus cuentas desde el panel. No compartas el enlace ni pegues contraseñas en chats.
 

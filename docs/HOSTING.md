@@ -77,10 +77,12 @@ MAILMCP_OIDC_CLIENT_ID=mailmcp-web
 # MAILMCP_OIDC_CLIENT_SECRET=YOUR_CLIENT_SECRET
 MAILMCP_OAUTH_SCOPE=mailmcp
 MAILMCP_OIDC_SCOPES=openid profile
-MAILMCP_ALLOWED_HOSTS=imap.example.net,smtp.example.net,pop.example.net
+MAILMCP_ALLOWED_HOSTS=*
 ```
 
-`MAILMCP_PUBLIC_URL` is an origin without a path. `MAILMCP_OAUTH_AUDIENCE`, if supplied, must equal `MAILMCP_PUBLIC_URL/mcp`. Missing authentication settings or HTTP public URLs fail closed. The allowlist contains exact operator-controlled hostnames, no wildcards. DNS resolves once per connection; every answer must be public and the checked address is used for the connection. Internal mail servers are deliberately unsupported for this public-service baseline.
+`MAILMCP_PUBLIC_URL` is an origin without a path. `MAILMCP_OAUTH_AUDIENCE`, if supplied, must equal `MAILMCP_PUBLIC_URL/mcp`. Missing authentication settings or HTTP public URLs fail closed. Set `MAILMCP_ALLOWED_HOSTS=*` to accept every public mail provider, including custom-domain servers, without maintaining a provider list. To restrict an installation, supply comma-separated exact hostnames instead; an empty or unset value blocks all mail hosts. Partial wildcards and URLs are not supported. This policy applies to account creation, updates and every outbound connection. DNS resolves once per connection; every answer must be public and the checked address is used for the connection, keeping the original hostname for certificate verification. Private, loopback, link-local/metadata, reserved, multicast and mixed public/private DNS destinations remain blocked even with `*`. Internal mail servers are deliberately unsupported for this public-service baseline.
+
+For an existing installation, deploy the updated application and change `MAILMCP_ALLOWED_HOSTS` to `*` in its runtime environment (Portainer stack variables or `.env`). Existing exact-host lists keep their restrictive meaning. A provider must still enable IMAP/POP3/SMTP access and accept the configured authentication method; allowing a hostname does not bypass its password, app-password or subscription requirements.
 
 ## Docker and HTTPS
 

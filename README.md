@@ -38,7 +38,7 @@ npm run setup
 npm run build
 ```
 
-Edit `.env` to allow your provider's exact mail hostnames. Connections to private, loopback or reserved IP addresses are rejected, including when allowlisted. Use an app password if your provider supports one. Mail-provider OAuth account connection is a future feature; a provider that disables password authentication will not work with this release.
+Setup enables all public mail providers with `MAILMCP_ALLOWED_HOSTS=*`. Operators can instead restrict connections to a comma-separated list of exact hostnames; an empty value blocks all mail hosts. Private, loopback and reserved IP addresses remain blocked in every mode, including mixed public/private DNS answers. Use an app password if your provider supports one. Mail-provider OAuth account connection is a future feature; a provider that disables password authentication will not work with this release.
 
 Configure a local MCP client with absolute paths (replace `/absolute/path/mailmcp`):
 

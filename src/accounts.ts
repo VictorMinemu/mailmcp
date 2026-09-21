@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { accountSchema, accountPatch, type Account } from './schemas.js';
 import type { Vault } from './vault.js';
 import { AppError } from './errors.js';
+import { assertMailHostAllowed } from './network.js';
 
 export function redact(account: Account) {
   const { owner: _owner, incoming, smtp, ...profile } = account;
@@ -30,8 +31,7 @@ export class Accounts {
   }
   private validateHosts(account: ReturnType<typeof accountSchema.parse>) {
     for (const connection of [account.incoming, account.smtp])
-      if (connection && !this.allowedHosts.has(connection.host))
-        throw new AppError('HOST_NOT_ALLOWED', 'Mail host is not enabled by the service operator.');
+      if (connection) assertMailHostAllowed(connection.host, this.allowedHosts);
   }
   add(owner: string, input: unknown) {
     const parsed = accountSchema.parse(input);
