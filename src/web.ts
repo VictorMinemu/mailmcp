@@ -26,6 +26,22 @@ async function body(req: IncomingMessage, maxBytes = 262_144) {
     throw new AppError('CONTENT_TYPE', 'Use application/json.', 415);
   const chunks: Buffer[] = [];
   let length = 0;
+  const trace = Number(req.headers['content-length'] ?? 0) > 1_000_000;
+  const progress = (stage: string) => {
+    if (trace)
+      console.error(
+        JSON.stringify({
+          event: 'upload',
+          stage,
+          received: length,
+          expected: req.headers['content-length'],
+          http: req.httpVersion,
+        }),
+      );
+  };
+  let nextProgress = 8_000_000;
+  progress('start');
+  req.once('aborted', () => progress('aborted'));
   const tooLarge = () =>
     new AppError(
       'BODY_TOO_LARGE',
@@ -39,7 +55,12 @@ async function body(req: IncomingMessage, maxBytes = 262_144) {
     length += chunk.length;
     if (length > maxBytes) throw tooLarge();
     chunks.push(chunk);
+    if (length >= nextProgress) {
+      progress('receiving');
+      nextProgress += 8_000_000;
+    }
   }
+  progress('complete');
   try {
     return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown;
   } catch {
