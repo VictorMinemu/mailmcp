@@ -5,6 +5,45 @@ on:
 permissions:
   contents: read
 jobs:
+  identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      MAILMCP_KEYCLOAK_URL: http://127.0.0.1:18088
+      MAILMCP_KEYCLOAK_CREDENTIALS_FILE: /tmp/mailmcp-test-operator.json
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Start disposable identity provider
+        run: |
+          docker run -d --name mailmcp-keycloak-test -p 127.0.0.1:18088:8080 \
+            -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
+            -e KC_BOOTSTRAP_ADMIN_PASSWORD=integration-test-only-password \
+            quay.io/keycloak/keycloak:26.7.3 start-dev
+          node --input-type=module <<'NODE'
+          import { writeFile } from 'node:fs/promises';
+          await writeFile(process.env.MAILMCP_KEYCLOAK_CREDENTIALS_FILE, JSON.stringify({
+            url: process.env.MAILMCP_KEYCLOAK_URL,
+            username: 'admin', password: 'integration-test-only-password'
+          }), { mode: 0o600 });
+          for (let attempt = 0; attempt < 60; attempt++) {
+            try {
+              const response = await fetch(`${process.env.MAILMCP_KEYCLOAK_URL}/realms/master`, { signal: AbortSignal.timeout(2000) });
+              if (response.ok) process.exit(0);
+            } catch {}
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+          throw new Error('Keycloak did not become ready');
+          NODE
+      - name: Verify fresh import, migration, DCR, PKCE, consent and tokens
+        run: node scripts/test-keycloak-config.mjs
+      - name: Remove disposable identity provider
+        if: always()
+        run: docker rm -f mailmcp-keycloak-test
   check:
     runs-on: ubuntu-latest
     strategy:

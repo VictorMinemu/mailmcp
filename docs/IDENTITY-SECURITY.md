@@ -21,3 +21,9 @@ This is a deployment-specific assessment, not a statement that the Keycloak imag
 - Temporary bootstrap administrator replaced with a separate permanent operator and deleted.
 
 Service notification SMTP, email verification/recovery, operator MFA, backup recovery drills and access restrictions for shared infrastructure administration remain operational responsibilities. Live mail credentials are needed for provider interoperability checks; synthetic account tests do not establish successful mail delivery.
+
+## Dynamic registration — 2026-09-21
+
+The original realm advertised a registration endpoint but rejected unknown clients with its default Trusted Hosts policy. It also lacked default MCP scope assignments for newly registered clients. The [migration and limits](HOSTING.md#automatic-mcp-client-registration-with-keycloak) enable client onboarding while enforcing PKCE S256, user consent, constrained callbacks, restricted scopes and protocol mappers, and no client-supplied URLs that the identity server would fetch. Constraints also apply to registration-token updates. The 200-client registration cap remains in place; edge rate limiting and capacity monitoring are operator responsibilities.
+
+This changes registration policy, not MailMCP's access-token checks: issuer, signature, expiration, stable subject, exact MCP audience and `mailmcp` scope remain required. Anonymous registration does not authorize access to any user's mail.

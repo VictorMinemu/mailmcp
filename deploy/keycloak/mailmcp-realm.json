@@ -85,6 +85,26 @@
           }
         }
       ]
+    },
+    {
+      "name": "basic",
+      "description": "Standard OIDC subject claim for dynamic clients",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "false",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "sub",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-sub-mapper",
+          "config": {
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
     }
   ],
   "clients": [
@@ -130,5 +150,158 @@
       "defaultClientScopes": ["profile"],
       "optionalClientScopes": ["mailmcp"]
     }
-  ]
+  ],
+  "defaultDefaultClientScopes": ["basic"],
+  "defaultOptionalClientScopes": ["profile", "mailmcp"],
+  "clientProfiles": {
+    "profiles": [
+      {
+        "name": "mailmcp-dcr",
+        "description": "MCP dynamic clients: PKCE, consent, constrained redirects and no server-side client URLs.",
+        "executors": [
+          {
+            "executor": "pkce-enforcer",
+            "configuration": {
+              "auto-configure": true
+            }
+          },
+          {
+            "executor": "consent-required",
+            "configuration": {
+              "auto-configure": true
+            }
+          },
+          {
+            "executor": "full-scope-disabled",
+            "configuration": {
+              "auto-configure": true
+            }
+          },
+          {
+            "executor": "reject-implicit-grant",
+            "configuration": {
+              "auto-configure": true
+            }
+          },
+          {
+            "executor": "reject-ropc-grant",
+            "configuration": {
+              "auto-configure": true
+            }
+          },
+          {
+            "executor": "secure-redirect-uris-enforcer",
+            "configuration": {
+              "allow-ipv4-loopback-address": true,
+              "allow-ipv6-loopback-address": true,
+              "allow-http-scheme": true,
+              "allow-wildcard-context-path": false,
+              "allow-private-use-uri-scheme": false,
+              "oauth-2-0-compliant": true
+            }
+          },
+          {
+            "executor": "secure-client-uris-pattern",
+            "configuration": {
+              "client-uri-fields": ["redirectUris", "postLogoutRedirectUris"],
+              "allowed-patterns": [
+                "https://[^/@#*\\s]+(?:/[^#*\\s]*)?",
+                "http://(?:127\\.0\\.0\\.1|localhost|\\[::1\\])(?::[0-9]{1,5})?(?:/[^#*\\s]*)?"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "mailmcp-dcr-no-fetch",
+        "description": "Dynamic clients may not cause Keycloak to fetch remote key, request or callback URLs.",
+        "executors": [
+          {
+            "executor": "secure-client-uris-pattern",
+            "configuration": {
+              "client-uri-fields": [
+                "rootUrl",
+                "adminUrl",
+                "jwksUri",
+                "requestUris",
+                "backchannelLogoutUrl",
+                "cibaClientNotificationEndpoint",
+                "sectorIdentifierUri"
+              ],
+              "allowed-patterns": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "clientPolicies": {
+    "policies": [
+      {
+        "name": "mailmcp-dcr",
+        "description": "Enforce safe dynamic registration and subsequent registration-token updates.",
+        "enabled": true,
+        "conditions": [
+          {
+            "condition": "client-updater-context",
+            "configuration": {
+              "update-client-source": [
+                "ByAnonymous",
+                "ByRegistrationAccessToken",
+                "ByInitialAccessToken"
+              ]
+            }
+          }
+        ],
+        "profiles": ["mailmcp-dcr", "mailmcp-dcr-no-fetch"]
+      }
+    ]
+  },
+  "components": {
+    "org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy": [
+      {
+        "name": "Consent Required",
+        "providerId": "consent-required",
+        "subType": "anonymous",
+        "config": {}
+      },
+      {
+        "name": "Full Scope Disabled",
+        "providerId": "scope",
+        "subType": "anonymous",
+        "config": {}
+      },
+      {
+        "name": "Max Clients Limit",
+        "providerId": "max-clients",
+        "subType": "anonymous",
+        "config": {
+          "max-clients": ["200"]
+        }
+      },
+      {
+        "name": "Allowed Client Scopes",
+        "providerId": "allowed-client-templates",
+        "subType": "anonymous",
+        "config": {
+          "allow-default-scopes": ["false"],
+          "allowed-client-scopes": ["openid", "profile", "mailmcp", "basic"]
+        }
+      },
+      {
+        "name": "Allowed Protocol Mapper Types",
+        "providerId": "allowed-protocol-mappers",
+        "subType": "anonymous",
+        "config": {
+          "allowed-protocol-mapper-types": []
+        }
+      },
+      {
+        "name": "Allowed Registration Web Origins",
+        "providerId": "registration-web-origins",
+        "subType": "anonymous",
+        "config": {}
+      }
+    ]
+  }
 }

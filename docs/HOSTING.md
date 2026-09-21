@@ -24,6 +24,41 @@ Configure a separate **MCP API resource**:
 
 MailMCP exposes OAuth protected-resource metadata at `/.well-known/oauth-protected-resource/mcp` and includes its URL in `WWW-Authenticate` on unauthenticated MCP requests. Authorization-server discovery and user consent are served by your configured provider. MCP clients connect to `https://YOUR_DOMAIN/mcp`. Mail-provider credentials are never reused as application access tokens.
 
+### Automatic MCP client registration with Keycloak
+
+The bundled Keycloak realm supports anonymous OAuth dynamic client registration (DCR). Users enter `https://mailmcp.org/mcp` in a compatible client, register/sign in at `auth.mailmcp.org`, and approve access. They do not need a shared client ID or administrator-issued secret. A DCR registration only creates an application identity; reading mail still requires that user's login and consent.
+
+Clients must support authorization code flow with PKCE S256 and request the `mailmcp` scope advertised by protected-resource metadata. HTTPS callbacks and exact HTTP loopback callbacks (`127.0.0.1`, `localhost`, `[::1]`, including a port) are accepted. Public clients (`none`) and confidential clients using a client secret are supported. Wildcards, URL fragments, userinfo, remote HTTP callbacks, custom URI schemes, unapproved scopes and client-supplied server-fetch URLs are rejected. Browser-origin registration is not enabled globally; a client registering directly from browser JavaScript needs an explicitly permitted registration origin. Server-side and desktop clients do not need that CORS permission.
+
+Registration enforces consent, PKCE and disabled full role scope; implicit and password grants are disabled. Anonymous clients cannot install protocol mappers. Only `openid`, `profile`, `basic` and `mailmcp` scopes are allowed; `basic` supplies the standard subject claim. Realm defaults expose `mailmcp` as an optional scope when a client omits `scope` during registration. Existing clients and user accounts are unchanged. Registration-token updates remain subject to the same constraints.
+
+**Existing installations require a migration.** Keycloak's startup realm import skips an existing realm, so redeploying the container alone does not update its policies. The migration first installs the constraints, then removes the source-host allowlist that caused `Policy 'Trusted Hosts' ... Host not trusted`. Run from a trusted operator machine, using a private JSON file containing the existing operator's `url`, `username` and `password`:
+
+```sh
+export MAILMCP_KEYCLOAK_URL=https://auth.YOUR_DOMAIN
+export MAILMCP_KEYCLOAK_CREDENTIALS_FILE=/private/operator-credentials.json
+export MAILMCP_KEYCLOAK_BACKUP_FILE=/private/before-dcr.json
+node scripts/configure-keycloak-dcr.mjs          # dry run
+node scripts/configure-keycloak-dcr.mjs --apply  # private backup; immediate effect
+```
+
+The script preserves unrelated policies and existing client assignments. It refuses an unexpected registration-policy layout and never prints credentials. Use a new backup filename for each application. Rollback: restore the saved anonymous `trusted-hosts` component first to stop new registrations, then restore saved profile/policy and default-scope assignments through Keycloak administration. Restoring registration restrictions does not revoke clients already registered; disable such clients separately if needed.
+
+The anonymous registration cap remains **200 total realm clients**. Monitor usage and remove abandoned registrations; do not remove the cap to solve exhaustion. Configure edge registration rate limits before scaling the public service. The application API's throttle does not cover Keycloak's registration endpoint.
+
+Regression commands (operator credentials required):
+
+```sh
+# Disposable local Keycloak, with MAILMCP_KEYCLOAK_URL=http://127.0.0.1:PORT:
+node scripts/test-keycloak-config.mjs
+# Target realm: creates and removes synthetic clients/user, checks login + consent + tokens:
+node scripts/test-keycloak-dcr.mjs
+# Also verify the real MCP handshake/tools using the issued token:
+MAILMCP_TEST_MCP_URL=https://mailmcp.org/mcp node scripts/test-keycloak-dcr.mjs
+```
+
+The local suite checks fresh imports, migration from the old blocked configuration, repeat application, existing-client preservation and adversarial registrations. For a custom resource set `MAILMCP_TEST_RESOURCE=https://YOUR_DOMAIN/mcp`; for a custom realm set `MAILMCP_KEYCLOAK_REALM`.
+
 ## Environment
 
 Run `npm run setup` to create a random key without displaying it. Edit the resulting `.env`; preserve the generated key:
