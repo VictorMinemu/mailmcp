@@ -228,6 +228,7 @@ try {
         const tool = (await mcp.listTools()).tools.find((entry) => entry.name === 'messages_send');
         assert.ok(tool.inputSchema.properties.attachments);
         // Unknown account for the synthetic user: exercise the entire upload path without sending mail.
+        const started = Date.now();
         const result = await mcp.callTool({
           name: 'messages_send',
           arguments: {
@@ -247,7 +248,7 @@ try {
           'NOT_FOUND',
         );
         console.log(
-          'PASS production MCP accepts 25 MB attachment through the proxy and enforces account ownership',
+          `PASS production MCP accepts 25 MB attachment in ${Date.now() - started} ms through the proxy and enforces account ownership`,
         );
       }
       if (process.env.MAILMCP_TEST_PUBLIC_PROVIDERS === '1') {
