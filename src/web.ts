@@ -58,9 +58,12 @@ export function createWeb(config: Config, services: Services, identity?: Identit
   const authLimit = new RateLimit(300, 60_000),
     publicLimit = new RateLimit(60, 60_000),
     apiLimit = new RateLimit(120, 60_000);
-  // Reserve before buffering authenticated MCP/send bodies. Keep the lease through
+  // Reserve before buffering large or unknown-length authenticated MCP/send bodies.
+  // Small requests remain available while uploads are running. Keep the lease through
   // SMTP completion, since decoded attachments stay in memory until then.
   const largeRequests = new Set<string>();
+  const needsReservation = (req: IncomingMessage) =>
+    req.headers['content-length'] === undefined || Number(req.headers['content-length']) > 262_144;
   function reserveRequest(owner: string) {
     if (largeRequests.size >= 2 || largeRequests.has(owner))
       throw new AppError('BUSY', 'Too many concurrent mail operations.', 429);
@@ -144,7 +147,7 @@ export function createWeb(config: Config, services: Services, identity?: Identit
         const token = authorization.slice(7),
           owner = await identity.bearer(token);
         apiLimit.check(owner);
-        if (req.method === 'POST') releaseRequest = reserveRequest(owner);
+        if (req.method === 'POST' && needsReservation(req)) releaseRequest = reserveRequest(owner);
         const parsedBody =
           req.method === 'POST' ? await body(req, MAX_SEND_REQUEST_BYTES) : undefined;
         const headers = new Headers();
@@ -224,7 +227,8 @@ export function createWeb(config: Config, services: Services, identity?: Identit
           }
         }
         if (req.method === 'POST' && path.startsWith('/api/mail/')) {
-          if (path === '/api/mail/send') releaseRequest = reserveRequest(owner);
+          if (path === '/api/mail/send' && needsReservation(req))
+            releaseRequest = reserveRequest(owner);
           const input = await body(
             req,
             path === '/api/mail/send' ? MAX_SEND_REQUEST_BYTES : 262_144,

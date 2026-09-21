@@ -367,7 +367,7 @@ test('hosted HTTP transport scopes every MCP request and web link to the OAuth s
           rawFetch(`${base}/api/mail/send`, {
             method: 'POST',
             headers: headersFor(owner),
-            body: '{}',
+            body: JSON.stringify(smallUpload),
           }),
         );
         await started;
@@ -378,11 +378,13 @@ test('hosted HTTP transport scopes every MCP request and web link to the OAuth s
             await rawFetch(`${base}/api/mail/send`, {
               method: 'POST',
               headers: headersFor(owner),
-              body: '{}',
+              body: JSON.stringify(smallUpload),
             })
           ).status,
           429,
         );
+      // Ordinary MCP calls stay available even while both upload slots are occupied.
+      assert.deepEqual(parsed(await bob.callTool({ name: 'accounts_list', arguments: {} })), []);
     } finally {
       releases.forEach((release) => release());
       for (const response of await Promise.all(pending)) assert.equal(response.status, 200);
