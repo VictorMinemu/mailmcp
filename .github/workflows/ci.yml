@@ -31,10 +31,13 @@ jobs:
             username: 'admin', password: 'integration-test-only-password'
           }), { mode: 0o600 });
           for (let attempt = 0; attempt < 60; attempt++) {
+            const controller = new AbortController();
+            // Keep the readiness attempt alive while a starting container resets sockets.
+            const deadline = setTimeout(() => controller.abort(), 2000);
             try {
-              const response = await fetch(`${process.env.MAILMCP_KEYCLOAK_URL}/realms/master`, { signal: AbortSignal.timeout(2000) });
+              const response = await fetch(`${process.env.MAILMCP_KEYCLOAK_URL}/realms/master`, { signal: controller.signal });
               if (response.ok) process.exit(0);
-            } catch {}
+            } catch {} finally { clearTimeout(deadline); }
             await new Promise(resolve => setTimeout(resolve, 2000));
           }
           throw new Error('Keycloak did not become ready');
