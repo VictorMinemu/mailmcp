@@ -200,7 +200,7 @@ try {
     }),
   });
   assert.equal(response.status, 200);
-  const tokens = await response.json();
+  let tokens = await response.json();
   const audience = process.env.MAILMCP_TEST_RESOURCE || 'https://mailmcp.org/mcp';
   const { payload } = await jwtVerify(
     tokens.access_token,
@@ -213,6 +213,45 @@ try {
   console.log(
     'PASS code + S256 + consent yields signed token with stable user subject, MCP audience and scope',
   );
+  assert.ok(tokens.refresh_expires_in > 365 * 86400, 'Refresh lifetime must exceed one year');
+  assert.ok(tokens.expires_in <= 300, 'Access tokens must remain short-lived');
+  const originalRefresh = tokens.refresh_token;
+  for (let renewal = 0; renewal < 2; renewal++) {
+    // Keycloak compares token issue times at whole-second precision.
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+    const refreshed = await fetch(metadata.token_endpoint, {
+      method: 'POST',
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        client_id: client.client_id,
+        refresh_token: tokens.refresh_token,
+      }),
+    });
+    assert.equal(refreshed.status, 200, 'Sequential refresh failed');
+    const next = await refreshed.json();
+    assert.ok(next.refresh_token && next.refresh_token !== tokens.refresh_token);
+    assert.ok(next.refresh_expires_in > 365 * 86400);
+    const verified = await jwtVerify(
+      next.access_token,
+      createRemoteJWKSet(new URL(metadata.jwks_uri)),
+      { issuer, audience },
+    );
+    assert.equal(verified.payload.sub, userId);
+    tokens = next; // Always replace both tokens together before the next refresh.
+  }
+  const replay = await fetch(metadata.token_endpoint, {
+    method: 'POST',
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      client_id: client.client_id,
+      refresh_token: originalRefresh,
+    }),
+  });
+  assert.equal(replay.status, 400, 'Used refresh token was accepted');
+  assert.equal((await replay.json()).error, 'invalid_grant');
+  console.log(
+    'PASS refresh lifetime exceeds one year, two rotations preserve identity and old-token replay is rejected',
+  );
   if (process.env.MAILMCP_TEST_MCP_URL) {
     assert.equal(process.env.MAILMCP_TEST_MCP_URL, audience);
     const { Client, StreamableHTTPClientTransport } = await import('@modelcontextprotocol/client');
@@ -224,6 +263,65 @@ try {
         }),
       );
       assert.equal((await mcp.listTools()).tools.length, 16);
+      // Reauthorize the same user through a different client, as happens on reconnect.
+      // The synthetic connected account must survive because ownership is issuer + sub.
+      const fixtureResult = await mcp.callTool({
+        name: 'accounts_add',
+        arguments: {
+          label: 'Reconnect fixture',
+          email: `${name}@example.com`,
+          senderName: 'Test',
+          smtp: {
+            host: 'smtp.example.com',
+            port: 465,
+            security: 'tls',
+            username: 'fixture',
+            password: 'synthetic-not-a-mail-password',
+          },
+        },
+      });
+      assert.ok(!fixtureResult.isError);
+      const fixture = JSON.parse(fixtureResult.content.find((item) => item.type === 'text').text);
+      const reconnected = new Client({ name: 'reconnect-regression', version: '1.0.0' });
+      try {
+        const secondClient = await register({ client_name: `${name}-reconnect` });
+        const secondVerifier = randomBytes(32).toString('base64url');
+        const secondCode = await authorizationCode(secondClient, secondVerifier);
+        const exchange = await fetch(metadata.token_endpoint, {
+          method: 'POST',
+          body: new URLSearchParams({
+            grant_type: 'authorization_code',
+            client_id: secondClient.client_id,
+            redirect_uri: redirect,
+            code: secondCode,
+            code_verifier: secondVerifier,
+          }),
+        });
+        assert.equal(exchange.status, 200);
+        const secondTokens = await exchange.json();
+        await reconnected.connect(
+          new StreamableHTTPClientTransport(new URL(audience), {
+            requestInit: { headers: { authorization: `Bearer ${secondTokens.access_token}` } },
+          }),
+        );
+        const listed = await reconnected.callTool({ name: 'accounts_list', arguments: {} });
+        assert.ok(!listed.isError);
+        assert.ok(
+          JSON.parse(listed.content.find((item) => item.type === 'text').text).some(
+            (account) => account.id === fixture.id,
+          ),
+        );
+        console.log(
+          'PASS renewed access and a newly registered reconnect client preserve the connected account',
+        );
+      } finally {
+        await reconnected.close();
+        const removed = await mcp.callTool({
+          name: 'accounts_remove',
+          arguments: { accountId: fixture.id, confirm: true },
+        });
+        assert.ok(!removed.isError, 'Synthetic account cleanup failed');
+      }
       if (process.env.MAILMCP_TEST_SEND_ATTACHMENTS === '1') {
         const tool = (await mcp.listTools()).tools.find((entry) => entry.name === 'messages_send');
         assert.ok(tool.inputSchema.properties.attachments);

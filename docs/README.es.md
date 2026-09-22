@@ -46,3 +46,7 @@ La web está disponible en español e inglés, con detección del idioma del nav
 ## Enviar archivos adjuntos
 
 `messages_send` admite `attachments`: una lista con `filename`, `contentBase64` y `contentType` opcional. Hasta **25 MB por archivo, 25 MB en total por correo y 10 archivos** (MB decimal). El cliente MCP lee el archivo y lo codifica en base64 estándar; no se aceptan rutas ni URLs. Revisa el correo y los archivos antes de usar `confirm: true`. El proveedor SMTP puede imponer un límite menor sobre el mensaje MIME final. Consulta el ejemplo en [la referencia MCP](MCP.md).
+
+## Conexiones MCP duraderas
+
+La sesión OAuth admite hasta 400 días sin renovar y dos años de duración máxima. Los tokens de acceso duran cinco minutos y el cliente MCP debe renovar y guardar los tokens de forma automática y sin renovaciones simultáneas. Reconectar con el mismo usuario conserva las cuentas. Consulta [la guía de sesiones, renovación y diagnóstico](OAUTH-SESSIONS.md).

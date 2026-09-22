@@ -18,7 +18,7 @@ Use the temporary bootstrap administrator only to create a permanent operator in
 
 The public `mailmcp-mcp` client uses authorization code flow, PKCE S256 and user consent. Its initial callback is exactly `http://127.0.0.1:8765/callback`, suitable for a local client configured on that port. Access tokens last five minutes. Request scope `mailmcp`; its audience mapper issues `aud=https://YOUR_DOMAIN/mcp`, which the server validates. Browser ID tokens have a different audience and cannot authorize MCP requests.
 
-For another MCP client, pre-register a separate public/confidential client with its exact documented redirect URI, PKCE S256 and the optional `mailmcp` scope. Configure that client ID in the MCP client. Do not allow arbitrary redirect URLs or unauthenticated client registration from every host. Dynamic registration and experimental client-metadata fetching are not enabled by this deployment.
+For another MCP client, pre-register a separate public/confidential client with its exact documented redirect URI, PKCE S256 and the optional `mailmcp` scope. Configure that client ID in the MCP client. Dynamic registration is constrained by the policies described in [Hosting](HOSTING.md#automatic-mcp-client-registration-with-keycloak). Arbitrary redirects and experimental client-metadata fetching are not enabled. See [OAuth sessions](OAUTH-SESSIONS.md) for the 400-day idle / 730-day maximum session policy and existing-realm migration.
 
 Keycloak does not yet process RFC 8707 resource indicators. The scope-to-audience mapping follows [Keycloak's documented MCP integration](https://www.keycloak.org/securing-apps/mcp-authz-server); full interoperability must be checked with each MCP client. The endpoint is `https://YOUR_DOMAIN/mcp`.
 

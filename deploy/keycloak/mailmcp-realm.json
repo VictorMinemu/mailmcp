@@ -18,8 +18,8 @@
   "maxFailureWaitSeconds": 900,
   "maxDeltaTimeSeconds": 43200,
   "accessTokenLifespan": 300,
-  "ssoSessionIdleTimeout": 1800,
-  "ssoSessionMaxLifespan": 28800,
+  "ssoSessionIdleTimeout": 34560000,
+  "ssoSessionMaxLifespan": 63072000,
   "revokeRefreshToken": true,
   "refreshTokenMaxReuse": 0,
   "passwordPolicy": "length(14) and notUsername(undefined) and notEmail(undefined)",
@@ -124,7 +124,9 @@
       "webOrigins": [],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "access.token.signed.response.alg": "RS256"
+        "access.token.signed.response.alg": "RS256",
+        "client.session.idle.timeout": "1800",
+        "client.session.max.lifespan": "28800"
       },
       "defaultClientScopes": ["profile"],
       "optionalClientScopes": []
@@ -303,5 +305,13 @@
         "config": {}
       }
     ]
-  }
+  },
+  "clientSessionIdleTimeout": 0,
+  "clientSessionMaxLifespan": 0,
+  "enabledEventTypes": [
+    "LOGIN_ERROR",
+    "CODE_TO_TOKEN_ERROR",
+    "REFRESH_TOKEN",
+    "REFRESH_TOKEN_ERROR"
+  ]
 }
