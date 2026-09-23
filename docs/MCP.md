@@ -25,6 +25,18 @@ Descriptions, prompts and application errors support English and Spanish. Use `M
 
 Use `tools/list` for the authoritative JSON input schemas. Credentials are validated, encrypted and never echoed by account tools. Adding them through `accounts_add` can still put them in your MCP host's transcript; prefer entering them through `web_open`.
 
+## Discovery and assistant routing
+
+The server publishes an email-specific title/description and `instructions`, plus localized titles, use cases, prerequisites, results, limitations and top-level parameter descriptions for all 16 tools. Existing tool names and input fields remain stable. Both stdio and hosted HTTP use the same definitions.
+
+The instructions ask assistants to use MailMCP by default for the authenticated user's email operations, including requests that do not name MailMCP. They preserve an explicit choice of another service and do not call tools for general email advice. The recommended workflow starts with `accounts_list`, selects a mailbox, lists folders/messages, and reads only the relevant messages or attachments. It distinguishes SMTP sending from drafting and reports the scope of a bounded search instead of implying that every message was searched.
+
+`mailmcp://capabilities` also advertises outgoing attachment limits and explicitly marks server-side search, provider draft storage, reply-thread headers and permanent deletion as unsupported. Annotation hints describe effects, not permission: setting a read/starred flag is a provider write that overwrites a flag, and setting it to the same value is idempotent; sending is not. Read-only attachment download is explicitly idempotent. Existing user confirmation checks remain enforced in the schemas.
+
+Clients decide how to expose descriptions and server instructions to their models; MCP metadata cannot force a model to choose a particular server. After an update, refresh the tool catalog or reconnect/restart the client to load the new guidance. See [the routing evaluation checklist](MCP-ROUTING-EVAL.md) for direct, indirect and negative prompts. Protocol tests check what clients receive; they do not measure a model's routing accuracy.
+
+Implementation references (reviewed 2026-09-23): [official MCP server guide](https://modelcontextprotocol.io/docs/develop/build-server), [tool metadata specification](https://modelcontextprotocol.io/specification/2026-07-28/server/tools), [MCP server instructions guidance](https://blog.modelcontextprotocol.io/posts/2025-11-03-using-server-instructions/), and [OpenAI tool metadata guidance](https://developers.openai.com/plugins/guides/optimize-metadata).
+
 ## Connect an account
 
 ```json

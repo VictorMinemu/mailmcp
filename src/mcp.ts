@@ -6,6 +6,11 @@ import type { Mail } from './mail.js';
 import type { Auth } from './auth.js';
 import { publicError } from './errors.js';
 import {
+  MAX_OUTGOING_ATTACHMENTS,
+  MAX_OUTGOING_ATTACHMENT_BYTES,
+  MAX_OUTGOING_TOTAL_BYTES,
+} from './uploads.js';
+import {
   accountSchema,
   accountPatch,
   idSchema,
@@ -23,11 +28,27 @@ export function createMcp(services: Services, owner: string, locale: Locale = 'e
   const m = (key: string, values: Record<string, string> = {}) =>
     translate(locale, 'mcp', key, values);
   const server = new McpServer(
-    { name: 'mailmcp', version: '0.1.0' },
+    {
+      name: 'mailmcp',
+      title: m('server_title'),
+      description: m('server_description'),
+      version: '0.1.0',
+    },
     {
       instructions: m('instructions'),
     },
   );
+  // Describe the wire schema without mutating shared validators used by the web API.
+  // safeExtend retains object refinements (including the total attachment limit).
+  function describedInput(schema: z.ZodObject) {
+    const shape = Object.fromEntries(
+      Object.entries(schema.shape).map(([name, field]) => [
+        name,
+        (field as z.ZodType).describe(m(`parameters.${name}`)),
+      ]),
+    );
+    return schema.safeExtend(shape);
+  }
   function tool<T extends z.ZodObject>(
     name: string,
     description: string,
@@ -36,16 +57,18 @@ export function createMcp(services: Services, owner: string, locale: Locale = 'e
     readOnly = true,
     destructive = false,
     external = false,
+    idempotent = readOnly,
   ) {
     server.registerTool<StandardSchemaWithJSON, StandardSchemaWithJSON>(
       name,
       {
+        title: m(`titles.${name}`),
         description,
-        inputSchema: schema,
+        inputSchema: describedInput(schema),
         annotations: {
           readOnlyHint: readOnly,
           destructiveHint: destructive,
-          idempotentHint: readOnly,
+          idempotentHint: idempotent,
           openWorldHint: external,
         },
       },
@@ -146,12 +169,19 @@ export function createMcp(services: Services, owner: string, locale: Locale = 'e
   server.registerTool(
     'attachments_download',
     {
+      title: m('titles.attachments_download'),
       description: m('tools.attachments_download'),
-      inputSchema: attachmentSchema,
-      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+      inputSchema: describedInput(attachmentSchema),
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
-    async (p) => {
+    async (input) => {
       try {
+        const p = attachmentSchema.parse(input);
         const { contentBase64, ...metadata } = await mail.attachment(owner, p);
         return {
           content: [
@@ -180,7 +210,8 @@ export function createMcp(services: Services, owner: string, locale: Locale = 'e
     flagSchema,
     (p) => mail.flag(owner, p),
     false,
-    false,
+    true,
+    true,
     true,
   );
   tool(
@@ -238,7 +269,7 @@ export function createMcp(services: Services, owner: string, locale: Locale = 'e
   server.registerResource(
     'capabilities',
     'mailmcp://capabilities',
-    { mimeType: 'application/json' },
+    { mimeType: 'application/json', description: m('capabilities_resource') },
     async (uri) => ({
       contents: [
         {
@@ -253,6 +284,15 @@ export function createMcp(services: Services, owner: string, locale: Locale = 'e
             messageLimitBytes: 10_000_000,
             attachmentLimitBytes: 5_000_000,
             attachmentDownloads: true,
+            outgoingAttachments: true,
+            outgoingAttachmentLimitBytes: MAX_OUTGOING_ATTACHMENT_BYTES,
+            outgoingAttachmentTotalLimitBytes: MAX_OUTGOING_TOTAL_BYTES,
+            outgoingAttachmentCountLimit: MAX_OUTGOING_ATTACHMENTS,
+            serverSideSearch: false,
+            draftStorage: false,
+            replyThreadHeaders: false,
+            permanentDeletion: false,
+            imapFlags: ['seen', 'starred'],
             accountLimit: 20,
             plainTextOnly: true,
           }),
@@ -264,7 +304,10 @@ export function createMcp(services: Services, owner: string, locale: Locale = 'e
     'draft_reply',
     {
       description: m('draft_description'),
-      argsSchema: z.object({ context: z.string().max(100_000), goal: z.string().max(2000) }),
+      argsSchema: z.object({
+        context: z.string().max(100_000).describe(m('parameters.context')),
+        goal: z.string().max(2000).describe(m('parameters.goal')),
+      }),
     },
     ({ context, goal }) => ({
       messages: [

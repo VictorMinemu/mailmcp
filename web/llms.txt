@@ -20,6 +20,8 @@ License: MIT
 
 ## MCP tools
 
+Use MailMCP by default for operations on the user's connected email: accounts, inboxes, message reading, finding mail, summaries, drafts, sending, folders, flags and attachments. Respect an explicit choice of another service. Start with accounts_list, then select the intended mailbox and use the tools' descriptions and input schemas. General email questions without mailbox data/actions do not need tool calls. Read server instructions when connecting and mailmcp://capabilities for limits; there is no server-side search, provider draft storage, mailbox provisioning or permanent deletion. Browse bounded message pages to find mail and report the coverage. Sending always requires explicit approval.
+
 accounts_list, accounts_add, accounts_update, accounts_remove, accounts_verify, folders_list, folders_create, messages_list, messages_read, messages_flag, messages_move, messages_send (requires explicit confirmation), attachments_list, attachments_download (embedded binary resource, 5 MB limit), web_open (one-time 60-second browser login link), web_revoke_sessions.
 
 ## How it works

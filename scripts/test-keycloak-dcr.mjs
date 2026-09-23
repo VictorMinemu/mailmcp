@@ -262,7 +262,43 @@ try {
           requestInit: { headers: { authorization: `Bearer ${tokens.access_token}` } },
         }),
       );
-      assert.equal((await mcp.listTools()).tools.length, 16);
+      for (const language of ['en', 'es']) {
+        const localized = new Client({ name: 'mailmcp-metadata-regression', version: '1.0.0' });
+        try {
+          await localized.connect(
+            new StreamableHTTPClientTransport(new URL(audience), {
+              requestInit: {
+                headers: {
+                  authorization: `Bearer ${tokens.access_token}`,
+                  'accept-language': language,
+                },
+              },
+            }),
+          );
+          const expected = JSON.parse(
+            await readFile(new URL(`../locales/${language}.json`, import.meta.url), 'utf8'),
+          ).mcp;
+          assert.equal(localized.getInstructions(), expected.instructions);
+          assert.equal(localized.getServerVersion().title, expected.server_title);
+          const tools = (await localized.listTools()).tools;
+          assert.equal(tools.length, 16);
+          for (const tool of tools) {
+            assert.equal(tool.description, expected[`tools.${tool.name}`]);
+            assert.equal(tool.title, expected[`titles.${tool.name}`]);
+            for (const [name, schema] of Object.entries(tool.inputSchema.properties ?? {}))
+              assert.equal(schema.description, expected[`parameters.${name}`]);
+          }
+          const capabilities = await localized.readResource({ uri: 'mailmcp://capabilities' });
+          const data = JSON.parse(capabilities.contents[0].text);
+          assert.equal(data.outgoingAttachmentTotalLimitBytes, 25_000_000);
+          assert.equal(data.serverSideSearch, false);
+        } finally {
+          await localized.close();
+        }
+      }
+      console.log(
+        'PASS live EN/ES server instructions, 16 tool descriptions, parameter metadata and capabilities',
+      );
       // Reauthorize the same user through a different client, as happens on reconnect.
       // The synthetic connected account must survive because ownership is issuer + sub.
       const fixtureResult = await mcp.callTool({
