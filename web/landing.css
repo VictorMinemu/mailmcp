@@ -742,6 +742,105 @@ body:has(#workspace:not([hidden])) .landing-nav {
   color: #fff;
 }
 
+/* Public MCP setup. The prompt stays selectable even without clipboard access. */
+.welcome .installation {
+  background: var(--paper);
+  border-block: 1px solid var(--line);
+}
+.install-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: clamp(28px, 5vw, 72px);
+  align-items: start;
+}
+.installation h2 {
+  margin: 16px 0 24px;
+}
+.install-steps {
+  padding-left: 24px;
+  margin: 24px 0;
+  line-height: 1.6;
+}
+.install-steps li + li {
+  margin-top: 12px;
+}
+.installation .install-note {
+  font-size: 14px;
+  color: var(--muted);
+}
+.install-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: clamp(16px, 3vw, 28px);
+  min-width: 0;
+}
+.install-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.install-card-heading label {
+  font-weight: 600;
+  margin: 0;
+}
+#install-prompt {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-height: 240px;
+  max-height: 600px;
+  resize: vertical;
+  font-size: 14px;
+  line-height: 1.65;
+  background: var(--paper);
+  color: var(--ink);
+}
+.installation .install-copy-status {
+  min-height: 3em;
+  font-size: 14px;
+  line-height: 1.5;
+  padding-top: 10px;
+}
+.installation .install-endpoint {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.install-help {
+  margin-top: 32px;
+  border-top: 1px solid var(--line);
+  padding-top: 24px;
+}
+.install-help summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.install-help-content {
+  max-width: 80ch;
+}
+.install-help-content p,
+.install-help-content pre {
+  margin-top: 16px;
+  font-size: 15px;
+}
+.install-help-content pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 760px) {
+  .install-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* FAQ */
 .faq-list {
   border-top: 1px solid var(--line);

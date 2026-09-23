@@ -9,6 +9,10 @@ Hay dos modos:
 - **Local:** MCP por stdio y panel en localhost. El proceso pertenece al usuario del sistema.
 - **Alojado:** dominio público con HTTPS, usuarios aislados, acceso MCP con OAuth e inicio de sesión web con OIDC. El proveedor de identidad gestiona el registro de usuarios; no se crean buzones de correo.
 
+## Conectar tu asistente al servicio gratuito
+
+Copia el [prompt de instalación de la página principal](https://mailmcp.org/#install) o sigue la [guía de Codex y solución de problemas de OAuth](../web/install.md#español). Añadir el servidor e iniciar sesión son pasos distintos. La guía explica cómo continuar si no se abre el navegador y qué hacer si Codex se ejecuta en una máquina remota.
+
 ## Preparación local
 
 ```sh

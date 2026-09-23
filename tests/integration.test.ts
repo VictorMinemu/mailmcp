@@ -185,6 +185,7 @@ test('real stdio MCP handshake, tools, resources, prompts and one-time browser s
       ['/robots.txt', 'text/plain', `Sitemap: ${origin}/sitemap.xml`],
       ['/sitemap.xml', 'application/xml', `<loc>${origin}/</loc>`],
       ['/llms.txt', 'text/plain', '# MailMCP'],
+      ['/install.md', 'text/plain', 'codex mcp login mailmcp --scopes openid,mailmcp'],
       ['/landing.css', 'text/css', '.hero'],
       ['/landing.js', 'text/javascript', 'IntersectionObserver'],
     ] as const) {

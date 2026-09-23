@@ -23,6 +23,8 @@ MailMCP is open-source software with a **free hosted service at [mailmcp.org](ht
 
 ## Free hosted service
 
+**Connect your assistant:** use the [copyable setup prompt](https://mailmcp.org/#install) or the [Codex installation and OAuth troubleshooting guide](web/install.md) (English / Spanish). Adding the server and completing its OAuth login are separate steps; the guide covers browsers that do not open automatically and remote callback issues.
+
 Anyone can use MailMCP at [https://mailmcp.org/](https://mailmcp.org/) at no cost: no card, no trial, no paid tier. Create an account with the identity provider, connect your existing IMAP, POP3 or SMTP accounts in the browser, and point any MCP client at `https://mailmcp.org/mcp`; the client discovers the OAuth authorization server through the published protected-resource metadata and signs in with the same identity.
 
 The hosted service runs this repository's code under the same rules as a self-hosted instance: mail is fetched on demand and never written to disk, there is no access or body logging, and only encrypted connection settings are stored. Removing a connection deletes its credentials. The operator holds the master key, so it is not end-to-end encryption; read the [security policy](SECURITY.md) for the exact threat model and self-host if you need to hold the key yourself.

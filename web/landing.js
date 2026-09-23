@@ -1,3 +1,27 @@
+import { message, setText } from './i18n.js';
+
+// Copy only the public, visible setup instructions; no credentials enter the prompt.
+const copyPrompt = document.getElementById('copy-install-prompt');
+const installPrompt = document.getElementById('install-prompt');
+const copyStatus = document.getElementById('install-copy-status');
+if (copyPrompt && installPrompt && copyStatus) {
+  copyPrompt.hidden = false;
+  copyPrompt.addEventListener('click', async () => {
+    copyPrompt.disabled = true;
+    setText(copyStatus, '');
+    try {
+      await navigator.clipboard.writeText(installPrompt.value);
+      setText(copyStatus, message('lp_install_copied'));
+    } catch {
+      installPrompt.focus();
+      installPrompt.select();
+      setText(copyStatus, message('lp_install_copy_failed'));
+    } finally {
+      copyPrompt.disabled = false;
+    }
+  });
+}
+
 // Landing page motion. Everything here is progressive: without JavaScript the page is
 // fully readable, and with reduced motion enabled nothing moves.
 const root = document.documentElement;

@@ -43,8 +43,8 @@ test('catalogs have matching keys/placeholders and cover application-owned text'
   const html = readFileSync('web/index.html', 'utf8');
   for (const match of html.matchAll(/data-i18n(?:-aria-label|-placeholder)?="([^"]+)"/g))
     assert.ok(Object.hasOwn(catalogs.en.web, match[1]!), match[1]);
-  const ui = readFileSync('web/app.js', 'utf8');
-  for (const match of ui.matchAll(/\b(?:msg|t|new UiError)\('([^']+)'/g))
+  const ui = ['web/app.js', 'web/landing.js'].map((file) => readFileSync(file, 'utf8')).join('\n');
+  for (const match of ui.matchAll(/\b(?:msg|message|t|new UiError)\('([^']+)'/g))
     assert.ok(Object.hasOwn(catalogs.en.web, match[1]!), match[1]);
   for (const file of readdirSync('src').filter((name) => name.endsWith('.ts'))) {
     for (const match of readFileSync(join('src', file), 'utf8').matchAll(

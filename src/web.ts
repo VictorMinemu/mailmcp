@@ -84,6 +84,7 @@ export function createWeb(config: Config, services: Services, identity?: Identit
     '/robots.txt': ['robots.txt', 'text/plain'],
     '/sitemap.xml': ['sitemap.xml', 'application/xml'],
     '/llms.txt': ['llms.txt', 'text/plain'],
+    '/install.md': ['install.md', 'text/plain'],
   };
   const handler = createMcpHandler(
     (ctx) => {

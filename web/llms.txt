@@ -24,6 +24,13 @@ accounts_list, accounts_add, accounts_update, accounts_remove, accounts_verify, 
 
 ## How it works
 
+Before calling any hosted MCP tool, configure **Streamable HTTP** at `https://mailmcp.org/mcp` and complete the client's OAuth login. Adding a URL or signing into the website alone is insufficient. Do not call `web_open` until the MCP is authenticated.
+
+Installation and OAuth troubleshooting (English / Spanish): https://mailmcp.org/install.md
+Copyable installation prompt: https://mailmcp.org/#install
+
+For Codex: check `codex mcp list`, add a missing entry with `codex mcp add mailmcp --url https://mailmcp.org/mcp`, and authenticate with `codex mcp login mailmcp --scopes openid,mailmcp` if needed. If add already starts login, complete that process instead of launching another. Keep login running while the user authorizes; surface its real authorization URL if the browser does not open. With remote execution, the browser callback must reach the login process. See the installation guide for callback troubleshooting. Verify with `accounts_list` (an empty list is valid); restart the client/session if new tools have not loaded. Never request credentials or callback codes in chat or claim success without an authenticated tool call.
+
 1. Create a free account on the hosted service, or run MailMCP locally (stdio) or on your own domain (hosted HTTPS with OAuth-protected MCP endpoint at /mcp).
 2. Ask your assistant to call web_open and add your IMAP/POP3/SMTP account in the browser, so credentials never enter the chat transcript.
 3. Ask your assistant to read, triage, flag, move, download attachments or draft and send mail. Sending and moving always require the user's confirmation.

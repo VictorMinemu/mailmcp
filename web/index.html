@@ -185,7 +185,8 @@
         ><span data-i18n="tagline">Private email for AI assistants.</span></span
       >
       <nav class="landing-nav" aria-label="Page sections" data-i18n-aria-label="lp_nav_label">
-        <a href="#how"><span data-i18n="lp_nav_how">How it works</span></a
+        <a href="#install"><span data-i18n="lp_install_nav">Install MCP</span></a
+        ><a href="#how"><span data-i18n="lp_nav_how">How it works</span></a
         ><a href="#hosted"><span data-i18n="lp_nav_hosted">Free hosted</span></a
         ><a href="#privacy"><span data-i18n="lp_nav_privacy">Privacy</span></a
         ><a href="#faq"><span data-i18n="lp_nav_faq">FAQ</span></a
@@ -221,7 +222,9 @@
               >
             </p>
             <div class="hero-actions">
-              <a id="login" class="button" href="/auth/login" data-hosted-only hidden
+              <a class="button" href="#install"
+                ><span data-i18n="lp_install_nav">Install MCP</span></a
+              ><a id="login" class="button ghost" href="/auth/login" data-hosted-only hidden
                 ><span data-i18n="lp_signup">Create a free account</span></a
               ><button id="redeem" hidden><span data-i18n="redeem">Open my session</span></button
               ><a class="button ghost" href="https://github.com/VictorMinemu/mailmcp" rel="noopener"
@@ -292,6 +295,106 @@
             </div>
           </figure>
         </div>
+      </section>
+
+      <section id="install" class="installation" aria-labelledby="install-title">
+        <div class="install-grid">
+          <div class="install-intro">
+            <p class="kicker" data-i18n="lp_install_kicker">CONNECT YOUR ASSISTANT</p>
+            <h2 id="install-title">
+              <span data-i18n="lp_install_title">One prompt. Your email connected.</span>
+            </h2>
+            <p data-i18n="lp_install_lead">
+              Copy this prompt into Codex or your MCP-compatible assistant. It includes the setup
+              steps and the browser sign-in you need to complete.
+            </p>
+            <ol class="install-steps">
+              <li data-i18n="lp_install_step1">
+                Copy the prompt and paste it into your assistant.
+              </li>
+              <li data-i18n="lp_install_step2">
+                Sign in to MailMCP and authorize the connection in your browser.
+              </li>
+              <li data-i18n="lp_install_step3">
+                Let your assistant verify the connection, then add your email accounts.
+              </li>
+            </ol>
+            <p class="install-note" data-i18n="lp_install_note">
+              Already have a MailMCP account? Use the same login to keep your connected mailboxes.
+              Enter mail passwords in the web panel, never in the chat.
+            </p>
+          </div>
+          <div class="install-card">
+            <div class="install-card-heading">
+              <label for="install-prompt" data-i18n="lp_install_label"
+                >Prompt for your assistant</label
+              >
+              <button id="copy-install-prompt" type="button" hidden>
+                <span data-i18n="lp_install_copy">Copy prompt</span>
+              </button>
+            </div>
+            <textarea
+              id="install-prompt"
+              rows="12"
+              readonly
+              spellcheck="false"
+              data-i18n="lp_install_prompt"
+              aria-describedby="install-copy-status"
+            >
+Help me connect the free hosted MailMCP service to this assistant. Read https://mailmcp.org/install.md for the setup and OAuth troubleshooting guide. The Streamable HTTP endpoint is https://mailmcp.org/mcp.
+
+Identify the client and where it runs first. For local Codex, check `codex mcp list`. If MailMCP is missing, run `codex mcp add mailmcp --url https://mailmcp.org/mcp`. Preserve existing configuration. If adding starts OAuth, keep that process running and complete it; otherwise run `codex mcp login mailmcp --scopes openid,mailmcp`. Do not start simultaneous logins.
+
+Show me the actual authorization link produced by the client if the browser does not open. Keep the login process alive while I sign in and authorize at auth.mailmcp.org. Do not invent a link or substitute a normal website login. If the command cannot run here, give me the exact command to run in my own terminal. For SSH, containers or remote agents, explain that the browser callback must reach the machine running the login. In a graphical client, use its MCP settings and Authenticate action; other clients need remote HTTP MCP and OAuth support.
+
+After authorization, check the connection by calling accounts_list. If the current conversation cannot see the new tools, tell me to restart the client or open a new session before checking again. An empty account list is a successful connection. Then offer web_open so I can add my existing email accounts privately. Never request passwords, access tokens, refresh tokens or callback codes in chat. Do not send or modify email during setup, and do not claim success until a tool call succeeds.</textarea>
+            <p
+              id="install-copy-status"
+              class="install-copy-status"
+              role="status"
+              aria-live="polite"
+            ></p>
+            <p class="install-endpoint">
+              <span data-i18n="lp_install_endpoint">Server URL</span
+              ><code>https://mailmcp.org/mcp</code>
+            </p>
+          </div>
+        </div>
+        <details class="install-help">
+          <summary data-i18n="lp_install_help_title">
+            Codex does not open the sign-in window?
+          </summary>
+          <div class="install-help-content">
+            <p data-i18n="lp_install_help_intro">
+              Adding the server and signing in are separate steps. If it is already added, run this
+              in a terminal on the same computer as your Codex client:
+            </p>
+            <pre><code>codex mcp login mailmcp --scopes openid,mailmcp</code></pre>
+            <p data-i18n="lp_install_help_browser">
+              Keep the command running. Open the authorization link it displays, sign in and accept
+              access. Opening mailmcp.org on its own does not authorize Codex. In the app or IDE,
+              use MCP settings → Authenticate instead.
+            </p>
+            <p data-i18n="lp_install_help_remote">
+              Using SSH, a container or a cloud agent? A localhost callback points to the machine
+              running the command. Run login on your own computer when Codex runs there; for a
+              remote client, follow the callback instructions in the guide. Never paste callback
+              codes or tokens into chat.
+            </p>
+            <p>
+              <a href="/install.md" data-i18n="lp_install_guide"
+                >Full setup and troubleshooting guide (EN / ES)</a
+              >
+              ·
+              <a
+                href="https://developers.openai.com/codex/mcp"
+                rel="noopener"
+                data-i18n="lp_install_official"
+                >Official Codex documentation</a
+              >
+            </p>
+          </div>
+        </details>
       </section>
 
       <section class="pillars" aria-labelledby="pillars-title">

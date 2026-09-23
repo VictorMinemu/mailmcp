@@ -19,7 +19,7 @@ const state = {
   generation: 0,
 };
 let loginToken = new URLSearchParams(location.hash.slice(1)).get('token');
-if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+if (loginToken) history.replaceState(null, '', location.pathname + location.search);
 // A new login link starts a fresh document: no previous user's mail, drafts or
 // in-flight responses can survive a switch of browser identity.
 window.addEventListener('hashchange', () => {
