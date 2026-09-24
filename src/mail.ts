@@ -1,6 +1,7 @@
 import { ImapFlow } from 'imapflow';
 import { smtpTransport } from './smtp.js';
 import { simpleParser } from 'mailparser';
+import { convert } from 'html-to-text';
 import { Accounts } from './accounts.js';
 import { AppError } from './errors.js';
 import { RateLimit } from './auth.js';
@@ -207,6 +208,12 @@ export class Mail {
             message.source.length > MAX_MESSAGE
           )
             throw new AppError('MESSAGE_SIZE', 'Message exceeds the 10 MB read limit.');
+          if (message.size !== undefined && message.source.length < message.size)
+            throw new AppError(
+              'MESSAGE_INCOMPLETE',
+              'The mail server returned an incomplete message. Retry reading it before drafting a reply.',
+              502,
+            );
           return message.source;
         } finally {
           lock.release();
@@ -222,6 +229,16 @@ export class Mail {
   read(owner: string, input: unknown) {
     return this.run(owner, async () => {
       const { parsed, p } = await this.parsedMessage(owner, input);
+      // MailParser can omit text for HTML-only multipart/alternative trees and
+      // for blank text/plain alternatives, even with skipHtmlToText: false.
+      let text = parsed.text ?? '';
+      if (!text.trim() && typeof parsed.html === 'string') text = convert(parsed.html);
+      if (!text.trim())
+        throw new AppError(
+          'MESSAGE_BODY_UNAVAILABLE',
+          'No readable message body could be extracted. The message may be empty or contain only attachments or unsupported content. Inspect it in your mail client or use attachments_list. Do not draft a reply assuming the message was read.',
+          422,
+        );
       return {
         untrustedContent: true,
         messageId: p.messageId,
@@ -229,8 +246,8 @@ export class Mail {
         from: parsed.from?.text,
         to: Array.isArray(parsed.to) ? parsed.to.map((a) => a.text) : parsed.to?.text,
         date: parsed.date,
-        text: (parsed.text ?? '').slice(0, 100_000),
-        truncated: (parsed.text?.length ?? 0) > 100_000,
+        text: text.slice(0, 100_000),
+        truncated: text.length > 100_000,
         attachments: parsed.attachments.map((a, index) => ({
           index,
           filename: safeFilename(a.filename, index),
