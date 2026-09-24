@@ -3,6 +3,8 @@ import { smtpTransport } from './smtp.js';
 import { simpleParser } from 'mailparser';
 import { convert } from 'html-to-text';
 import type { z } from 'zod';
+import type { FetchMessageObject } from 'imapflow';
+import { buildSearchQuery, hasAttachmentParts } from './search.js';
 import { replyHeaders } from './reply.js';
 import { Accounts } from './accounts.js';
 import { AppError } from './errors.js';
@@ -11,6 +13,7 @@ import { Pop3, MAX_MESSAGE } from './pop3.js';
 import { mailEndpoint } from './network.js';
 import {
   listSchema,
+  searchSchema,
   readSchema,
   sendSchema,
   replySchema,
@@ -167,14 +170,58 @@ export class Mail {
           return {
             uidValidity,
             nextBefore: start > 1 ? start : null,
-            messages: messages.reverse().map((m) => ({
-              messageId: String(m.uid),
-              subject: m.envelope?.subject?.slice(0, 1000),
-              from: m.envelope?.from?.slice(0, 20),
-              date: m.envelope?.date,
-              flags: [...(m.flags ?? [])],
-              size: m.size,
-            })),
+            messages: messages.reverse().map((m) => this.summary(m)),
+          };
+        } finally {
+          lock.release();
+        }
+      });
+    });
+  }
+  private summary(m: FetchMessageObject) {
+    return {
+      messageId: String(m.uid),
+      subject: m.envelope?.subject?.slice(0, 1000),
+      from: m.envelope?.from?.slice(0, 20),
+      date: m.envelope?.date,
+      flags: [...(m.flags ?? [])],
+      size: m.size,
+    };
+  }
+  search(owner: string, input: unknown) {
+    return this.run(owner, async () => {
+      const p = searchSchema.parse(input),
+        a = this.accounts.get(owner, p.accountId);
+      if (a.incoming?.protocol !== 'imap')
+        throw new AppError('UNSUPPORTED', 'Search requires an IMAP account. POP3 has no search.');
+      return this.imap(a, async (c) => {
+        const lock = await c.getMailboxLock(p.folder, { readOnly: true });
+        try {
+          const uidValidity = this.validity(c);
+          if (p.beforeUid === 1)
+            return { folder: p.folder, uidValidity, total: 0, nextBeforeUid: null, messages: [] };
+          // The provider evaluates every criterion and returns only matching UIDs.
+          const found = await c.search(buildSearchQuery(p), { uid: true });
+          const uids = (Array.isArray(found) ? found : []).sort((x, y) => y - x);
+          const page = uids.slice(0, p.limit);
+          const messages = page.length
+            ? await c.fetchAll(
+                page,
+                { uid: true, envelope: true, flags: true, size: true, bodyStructure: true },
+                { uid: true },
+              )
+            : [];
+          return {
+            folder: p.folder,
+            uidValidity,
+            total: uids.length,
+            nextBeforeUid: uids.length > page.length ? page[page.length - 1]! : null,
+            messages: messages
+              .sort((x, y) => y.uid - x.uid)
+              .map((m) => ({
+                ...this.summary(m),
+                hasAttachments: hasAttachmentParts(m.bodyStructure),
+              })),
           };
         } finally {
           lock.release();

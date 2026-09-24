@@ -68,6 +68,59 @@ export const listSchema = idSchema.extend({
   limit: z.number().int().min(1).max(50).default(20),
   before: z.number().int().min(1).optional(),
 });
+const isoDay = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((v) => {
+    const t = Date.parse(`${v}T00:00:00.000Z`);
+    return Number.isFinite(t) && new Date(t).toISOString().startsWith(v);
+  }, 'Use a real calendar date in YYYY-MM-DD form');
+const SEARCH_CRITERIA = [
+  'query',
+  'sender',
+  'recipient',
+  'subjectContains',
+  'bodyContains',
+  'dateFrom',
+  'dateTo',
+  'unread',
+  'starred',
+  'answered',
+  'hasAttachments',
+  'minSize',
+  'maxSize',
+] as const;
+export const searchSchema = idSchema
+  .extend({
+    folder: line.default('INBOX'),
+    query: line.optional(),
+    sender: line.optional(),
+    recipient: line.optional(),
+    subjectContains: line.optional(),
+    bodyContains: line.optional(),
+    dateFrom: isoDay.optional(),
+    dateTo: isoDay.optional(),
+    unread: z.boolean().optional(),
+    starred: z.boolean().optional(),
+    answered: z.boolean().optional(),
+    hasAttachments: z.boolean().optional(),
+    minSize: z.number().int().min(0).max(1_000_000_000).optional(),
+    maxSize: z.number().int().min(1).max(1_000_000_000).optional(),
+    limit: z.number().int().min(1).max(50).default(20),
+    beforeUid: z.number().int().positive().optional(),
+  })
+  .refine(
+    (p) => SEARCH_CRITERIA.some((key) => p[key] !== undefined),
+    'Provide at least one search criterion',
+  )
+  .refine(
+    (p) => !p.dateFrom || !p.dateTo || p.dateFrom <= p.dateTo,
+    'dateFrom must not be after dateTo',
+  )
+  .refine(
+    (p) => p.minSize === undefined || p.maxSize === undefined || p.minSize <= p.maxSize,
+    'minSize must not exceed maxSize',
+  );
 export const readSchema = idSchema.extend({
   folder: line.default('INBOX'),
   messageId: line,

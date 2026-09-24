@@ -2,25 +2,26 @@
 
 Tools are available through local stdio and authenticated hosted HTTP. Every operation uses a principal supplied by the transport; no tool accepts a user/owner ID. MCP annotations describe effects; they are not an authorization mechanism. A host must still ask its user before sending or moving mail.
 
-| Tool                   | Purpose                                                                                    |
-| ---------------------- | ------------------------------------------------------------------------------------------ |
-| `accounts_list`        | List redacted account profiles                                                             |
-| `accounts_add`         | Connect an existing account                                                                |
-| `accounts_update`      | Edit label, sender name, configured address, Reply-To or complete connection configuration |
-| `accounts_remove`      | Remove saved credentials and connection, with `confirm: true`                              |
-| `accounts_verify`      | Verify configured protocol logins without sending                                          |
-| `folders_list`         | IMAP folders, or POP3 INBOX                                                                |
-| `folders_create`       | Create an IMAP folder                                                                      |
-| `messages_list`        | Bounded message page; IMAP returns UIDVALIDITY                                             |
-| `messages_read`        | Plain-text message and attachment metadata                                                 |
-| `attachments_list`     | Attachment indices, names, MIME types and sizes                                            |
-| `attachments_download` | Exact attachment bytes as an embedded binary MCP resource                                  |
-| `messages_flag`        | Set/clear seen or starred                                                                  |
-| `messages_move`        | Move an IMAP message, with confirmation                                                    |
-| `messages_reply`       | Reply to an original message with In-Reply-To/References and explicit confirmation         |
-| `messages_send`        | Send plain-text mail, with confirmation                                                    |
-| `web_open`             | One-use URL granting the MCP user's web session                                            |
-| `web_revoke_sessions`  | Revoke that user's web sessions and pending links                                          |
+| Tool                   | Purpose                                                                                           |
+| ---------------------- | ------------------------------------------------------------------------------------------------- |
+| `accounts_list`        | List redacted account profiles                                                                    |
+| `accounts_add`         | Connect an existing account                                                                       |
+| `accounts_update`      | Edit label, sender name, configured address, Reply-To or complete connection configuration        |
+| `accounts_remove`      | Remove saved credentials and connection, with `confirm: true`                                     |
+| `accounts_verify`      | Verify configured protocol logins without sending                                                 |
+| `folders_list`         | IMAP folders, or POP3 INBOX                                                                       |
+| `folders_create`       | Create an IMAP folder                                                                             |
+| `messages_list`        | Bounded message page; IMAP returns UIDVALIDITY                                                    |
+| `messages_search`      | Provider-side IMAP search by sender, recipient, subject, text, dates, flags, attachments and size |
+| `messages_read`        | Plain-text message and attachment metadata                                                        |
+| `attachments_list`     | Attachment indices, names, MIME types and sizes                                                   |
+| `attachments_download` | Exact attachment bytes as an embedded binary MCP resource                                         |
+| `messages_flag`        | Set/clear seen or starred                                                                         |
+| `messages_move`        | Move an IMAP message, with confirmation                                                           |
+| `messages_reply`       | Reply to an original message with In-Reply-To/References and explicit confirmation                |
+| `messages_send`        | Send plain-text mail, with confirmation                                                           |
+| `web_open`             | One-use URL granting the MCP user's web session                                                   |
+| `web_revoke_sessions`  | Revoke that user's web sessions and pending links                                                 |
 
 Descriptions, prompts and application errors support English and Spanish. Use `MAILMCP_LANGUAGE` in stdio or `Accept-Language` in HTTP; see [languages](LANGUAGES.md). `web_open` accepts optional `language: "en" | "es"`. Tool identifiers and JSON field names remain unchanged.
 
@@ -28,11 +29,11 @@ Use `tools/list` for the authoritative JSON input schemas. Credentials are valid
 
 ## Discovery and assistant routing
 
-The server publishes an email-specific title/description and `instructions`, plus localized titles, use cases, prerequisites, results, limitations and top-level parameter descriptions for all 17 tools. Existing tool names and input fields remain stable. Both stdio and hosted HTTP use the same definitions.
+The server publishes an email-specific title/description and `instructions`, plus localized titles, use cases, prerequisites, results, limitations and top-level parameter descriptions for all 18 tools. Existing tool names and input fields remain stable. Both stdio and hosted HTTP use the same definitions.
 
-The instructions ask assistants to use MailMCP by default for the authenticated user's email operations, including requests that do not name MailMCP. They preserve an explicit choice of another service and do not call tools for general email advice. The recommended workflow starts with `accounts_list`, selects a mailbox, lists folders/messages, and reads only the relevant messages or attachments. It distinguishes SMTP sending from drafting and reports the scope of a bounded search instead of implying that every message was searched.
+The instructions ask assistants to use MailMCP by default for the authenticated user's email operations, including requests that do not name MailMCP. They preserve an explicit choice of another service and do not call tools for general email advice. The recommended workflow starts with `accounts_list`, selects a mailbox, searches with `messages_search` when the user describes what to find or lists recent messages otherwise, and reads only the relevant messages or attachments. It distinguishes SMTP sending from drafting and reports the folder and criteria searched instead of implying that every folder was covered.
 
-`mailmcp://capabilities` also advertises outgoing attachment limits and explicitly marks server-side search, provider draft storage and permanent deletion as unsupported; reply-thread headers are supported through `messages_reply`. Annotation hints describe effects, not permission: setting a read/starred flag is a provider write that overwrites a flag, and setting it to the same value is idempotent; sending is not. Read-only attachment download is explicitly idempotent. Existing user confirmation checks remain enforced in the schemas.
+`mailmcp://capabilities` also advertises outgoing attachment limits, the supported search criteria, and explicitly marks provider draft storage and permanent deletion as unsupported; reply-thread headers are supported through `messages_reply`. Annotation hints describe effects, not permission: setting a read/starred flag is a provider write that overwrites a flag, and setting it to the same value is idempotent; sending is not. Read-only attachment download is explicitly idempotent. Existing user confirmation checks remain enforced in the schemas.
 
 Clients decide how to expose descriptions and server instructions to their models; MCP metadata cannot force a model to choose a particular server. After an update, refresh the tool catalog or reconnect/restart the client to load the new guidance. See [the routing evaluation checklist](MCP-ROUTING-EVAL.md) for direct, indirect and negative prompts. Protocol tests check what clients receive; they do not measure a model's routing accuracy.
 
@@ -66,6 +67,28 @@ Implementation references (reviewed 2026-09-23): [official MCP server guide](htt
 At least one connection is required. Incoming authentication and SMTP authentication are independent. POP3 supports `security: "tls"` only. SMTP/IMAP accept `starttls` but never fall back to plaintext. Common ports are IMAP TLS 993 / STARTTLS 143, POP3 TLS 995 and SMTP TLS 465 / STARTTLS 587.
 
 `accounts_update` takes `{ "accountId": "UUID", "changes": { "senderName": "New Name" } }`. Omitting connection fields preserves credentials; supplying a connection replaces that complete connection. `null` removes a connection or clears Reply-To. Changes affect this client's configuration only; the mail provider decides which sender aliases are authorized.
+
+## Search messages
+
+`messages_search` sends the criteria to the mail provider as an IMAP `SEARCH`, so MailMCP never indexes or stores mail to answer it. It requires an IMAP account and searches one folder per call (default `INBOX`). At least one criterion is required; all criteria are ANDed, text criteria are case-insensitive substrings as implemented by the provider, and `recipient` matches `To` or `Cc`.
+
+```json
+{
+  "accountId": "UUID",
+  "folder": "INBOX",
+  "sender": "ana@example.com",
+  "subjectContains": "invoice",
+  "dateFrom": "2026-09-01",
+  "dateTo": "2026-09-30",
+  "unread": true,
+  "hasAttachments": true,
+  "limit": 20
+}
+```
+
+Other criteria: `query` (headers and body), `recipient`, `bodyContains`, `starred`, `answered`, `minSize` and `maxSize` as exclusive bounds in bytes (IMAP LARGER/SMALLER). Dates are calendar days, inclusive at both ends. `hasAttachments` filters on the provider by the `multipart/mixed` content type and each result carries a `hasAttachments` flag computed from the message structure, without downloading parts. The attachment filter is approximate: multipart/mixed may contain no files, and attachments in other MIME structures can be missed.
+
+The response contains `total` matches within the current cursor range, `folder`, `uidValidity`, and up to 50 messages newest first with the same summary fields as `messages_list`. When more matches remain, `nextBeforeUid` is the cursor: repeat the call with the same criteria and `beforeUid` set to that value. Open a result with `messages_read` using the returned `messageId`, `folder` and `uidValidity`. POP3 accounts return `UNSUPPORTED`.
 
 ## Download an attachment
 

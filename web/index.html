@@ -258,9 +258,11 @@
               </p>
               <ol class="demo-tools" aria-label="Tool calls" data-i18n-aria-label="lp_demo_tools">
                 <li class="demo-tool">
-                  <code>messages_list</code>
+                  <code>messages_search</code>
                   <span class="demo-arg"
-                    ><span data-i18n="lp_demo_arg1">INBOX, newest 25</span></span
+                    ><span data-i18n="lp_demo_arg1"
+                      >from accountant, last 7 days, unread</span
+                    ></span
                   >
                   <span class="demo-tick" aria-hidden="true"></span>
                 </li>
@@ -479,7 +481,7 @@ After authorization, check the connection by calling accounts_list. If the curre
       <section class="tools" aria-labelledby="tools-title">
         <div class="tools-intro" data-reveal>
           <h2 id="tools-title">
-            <span data-i18n="lp_tools_h">Sixteen tools, one scope: your own accounts</span>
+            <span data-i18n="lp_tools_h">Eighteen tools, one scope: your own accounts</span>
           </h2>
           <p>
             <span data-i18n="lp_tools_t"
@@ -498,12 +500,14 @@ After authorization, check the connection by calling accounts_list. If the curre
             <li><code>folders_list</code></li>
             <li><code>folders_create</code></li>
             <li><code>messages_list</code></li>
+            <li><code>messages_search</code></li>
           </ul>
           <ul class="marquee-track reverse">
             <li><code>messages_read</code></li>
             <li><code>messages_flag</code></li>
             <li><code>messages_move</code></li>
             <li><code>messages_send</code></li>
+            <li><code>messages_reply</code></li>
             <li><code>attachments_list</code></li>
             <li><code>attachments_download</code></li>
             <li><code>web_open</code></li>

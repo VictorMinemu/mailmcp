@@ -12,6 +12,7 @@ MailMCP is open-source software with a **free hosted service at [mailmcp.org](ht
 
 - Connect, list, edit, verify and remove mail accounts. Set a label, configured address, sender name and Reply-To independently of credentials.
 - IMAP folders, message listing and reading, seen/starred flags, moving messages and creating folders.
+- **Provider-side search**: `messages_search` runs an IMAP `SEARCH` on the mail server by sender, recipient, subject, text, date range, unread/starred/answered state, attachments and size, with UID-based pagination. Nothing is indexed or stored by MailMCP.
 - POP3 over implicit TLS: UIDL listing and message retrieval, without deleting mail.
 - SMTP text messages with explicit confirmation. Supports TLS or mandatory STARTTLS.
 - **Reply within a thread**: `messages_reply` derives `In-Reply-To`, `References` and the reply subject from the original message, with explicit recipient and send confirmation.

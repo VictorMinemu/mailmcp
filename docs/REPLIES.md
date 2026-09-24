@@ -38,7 +38,7 @@ Missing, duplicated or unsupported original message IDs fail with `REPLY_MESSAGE
 
 The result includes outgoing `messageId`, `accepted`, `rejected`, `to`, `subject`, `inReplyTo`, and `references`. Inspect both recipient lists: SMTP may accept only some recipients. Delivery after a transport error can be uncertain; never retry automatically.
 
-The web API also exposes `POST /api/mail/reply` with the same contract, authentication, CSRF checks and outgoing-upload budget. This release adds the MCP tool and API; the web composer has no new reply button. `mailmcp://capabilities` advertises `replyThreadHeaders: true`. Existing clients should refresh the catalog or reconnect to discover the 17th tool.
+The web API also exposes `POST /api/mail/reply` with the same contract, authentication, CSRF checks and outgoing-upload budget. This release adds the MCP tool and API; the web composer has no new reply button. `mailmcp://capabilities` advertises `replyThreadHeaders: true`. Existing clients should refresh the catalog or reconnect to discover the reply tool.
 
 ## Verification and limits
 

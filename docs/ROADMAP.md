@@ -10,7 +10,7 @@ The free hosted service runs at [https://mailmcp.org/](https://mailmcp.org/) on 
 
 ## Mail compatibility and usability
 
-Mail-provider OAuth grants and refresh, larger streaming attachments, browser attachment picker, full-text search, drafts/replies, Sent-folder behavior, pagination resilient to mailbox changes, richer folder management and optional hardened HTML viewing. No automatic rendering of downloaded active content.
+Mail-provider OAuth grants and refresh, larger streaming attachments, browser attachment picker, multi-folder search and provider-specific search extensions (Gmail X-GM-RAW), provider draft storage, Sent-folder behavior, pagination resilient to mailbox changes, richer folder management and optional hardened HTML viewing. No automatic rendering of downloaded active content.
 
 ## Operations and growth
 

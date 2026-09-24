@@ -2,7 +2,7 @@
 
 MailMCP conecta cuentas de correo que ya existen a un asistente mediante MCP y a un cliente web. Está disponible como **servicio alojado gratuito en [mailmcp.org](https://mailmcp.org/)** y como software para autoalojar. **No ofrece ni crea direcciones de correo propias.**
 
-Incluye IMAP, POP3 con TLS y SMTP; configuración de cuentas y nombres de remitente; lectura, envío y **descarga de archivos adjuntos desde el MCP y el panel**. La tool `web_open` devuelve un enlace de un solo uso, válido durante 60 segundos, para abrir la sesión del usuario que la solicita.
+Incluye IMAP, POP3 con TLS y SMTP; configuración de cuentas y nombres de remitente; **búsqueda en el servidor del proveedor** por remitente, destinatario, asunto, texto, fechas, estado, adjuntos y tamaño (`messages_search`, IMAP); lectura, envío y **descarga de archivos adjuntos desde el MCP y el panel**. La tool `web_open` devuelve un enlace de un solo uso, válido durante 60 segundos, para abrir la sesión del usuario que la solicita.
 
 Hay dos modos:
 

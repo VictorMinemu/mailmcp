@@ -42,7 +42,7 @@ test('MCP discovery delivers localized routing guidance and documented inputs wi
         assert.match(client.getInstructions()!.slice(0, 512), /accounts_list/);
         assert.equal(client.getServerVersion()?.title, catalogs[locale].mcp.server_title);
         const { tools } = await client.listTools();
-        assert.equal(tools.length, 17);
+        assert.equal(tools.length, 18);
         for (const tool of tools) {
           assert.ok(tool.title && !tool.title.startsWith('titles.'), tool.name);
           assert.equal(tool.description, catalogs[locale].mcp[`tools.${tool.name}`]);
@@ -106,7 +106,13 @@ test('MCP discovery delivers localized routing guidance and documented inputs wi
         const capabilities = await client.readResource({ uri: 'mailmcp://capabilities' });
         const limits = JSON.parse((capabilities.contents[0] as { text: string }).text);
         assert.equal(limits.outgoingAttachmentTotalLimitBytes, MAX_OUTGOING_TOTAL_BYTES);
-        assert.equal(limits.serverSideSearch, false);
+        assert.equal(limits.serverSideSearch, true);
+        assert.ok(limits.searchCriteria.includes('sender'));
+        assert.equal(props('messages_search').limit.maximum, 50);
+        assert.equal(props('messages_search').dateFrom.pattern, '^\\d{4}-\\d{2}-\\d{2}$');
+        assert.match(props('messages_search').beforeUid.description, /nextBeforeUid/);
+        assert.deepEqual(find('messages_search').annotations, find('messages_list').annotations);
+        assert.match(client.getInstructions()!, /messages_search/);
         assert.equal(limits.draftStorage, false);
         assert.equal(limits.replyThreadHeaders, true);
         assert.ok(find('messages_reply').inputSchema.required?.includes('to'));
