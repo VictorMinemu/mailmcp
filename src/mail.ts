@@ -2,6 +2,8 @@ import { ImapFlow } from 'imapflow';
 import { smtpTransport } from './smtp.js';
 import { simpleParser } from 'mailparser';
 import { convert } from 'html-to-text';
+import type { z } from 'zod';
+import { replyHeaders } from './reply.js';
 import { Accounts } from './accounts.js';
 import { AppError } from './errors.js';
 import { RateLimit } from './auth.js';
@@ -11,6 +13,7 @@ import {
   listSchema,
   readSchema,
   sendSchema,
+  replySchema,
   flagSchema,
   moveSchema,
   attachmentSchema,
@@ -242,6 +245,8 @@ export class Mail {
       return {
         untrustedContent: true,
         messageId: p.messageId,
+        rfcMessageId: parsed.messageId,
+        replyTo: parsed.replyTo?.text,
         subject: parsed.subject,
         from: parsed.from?.text,
         to: Array.isArray(parsed.to) ? parsed.to.map((a) => a.text) : parsed.to?.text,
@@ -288,28 +293,54 @@ export class Mail {
     return this.run(owner, async () => {
       const p = sendSchema.parse(input),
         a = this.accounts.get(owner, p.accountId);
-      this.sends.check(owner);
-      const c = await this.smtp(a);
-      try {
-        const sent = await c.sendMail({
-          from: { name: a.senderName, address: a.email },
-          replyTo: a.replyTo,
-          to: p.to.map((address) => ({ address, name: '' })),
-          subject: p.subject,
-          text: p.text,
-          attachments: p.attachments?.map((attachment) => ({
-            filename: attachment.filename,
-            contentType: attachment.contentType,
-            content: Buffer.from(attachment.contentBase64, 'base64'),
-            contentDisposition: 'attachment',
-            contentTransferEncoding: 'base64',
-          })),
-        });
-        return { messageId: sent.messageId, accepted: sent.accepted, rejected: sent.rejected };
-      } finally {
-        c.close();
-      }
+      return this.deliver(owner, a, p);
     });
+  }
+  reply(owner: string, input: unknown) {
+    return this.run(owner, async () => {
+      const p = replySchema.parse(input);
+      const a = this.accounts.get(owner, p.accountId);
+      if (!a.smtp) throw new AppError('UNSUPPORTED', 'Configure SMTP to send mail.');
+      const { parsed } = await this.parsedMessage(owner, {
+        accountId: p.accountId,
+        folder: p.folder,
+        messageId: p.messageId,
+        uidValidity: p.uidValidity,
+      });
+      const thread = replyHeaders(parsed);
+      const sent = await this.deliver(owner, a, { ...p, subject: thread.subject }, thread);
+      return { ...sent, ...thread, to: p.to };
+    });
+  }
+  private async deliver(
+    owner: string,
+    a: Account,
+    p: z.output<typeof sendSchema>,
+    thread?: ReturnType<typeof replyHeaders>,
+  ) {
+    this.sends.check(owner);
+    const c = await this.smtp(a);
+    try {
+      const sent = await c.sendMail({
+        from: { name: a.senderName, address: a.email },
+        replyTo: a.replyTo,
+        to: p.to.map((address) => ({ address, name: '' })),
+        subject: p.subject,
+        inReplyTo: thread?.inReplyTo,
+        references: thread?.references,
+        text: p.text,
+        attachments: p.attachments?.map((attachment) => ({
+          filename: attachment.filename,
+          contentType: attachment.contentType,
+          content: Buffer.from(attachment.contentBase64, 'base64'),
+          contentDisposition: 'attachment',
+          contentTransferEncoding: 'base64',
+        })),
+      });
+      return { messageId: sent.messageId, accepted: sent.accepted, rejected: sent.rejected };
+    } finally {
+      c.close();
+    }
   }
   flag(owner: string, input: unknown) {
     return this.run(owner, async () => {

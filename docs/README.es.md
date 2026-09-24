@@ -54,3 +54,7 @@ La web está disponible en español e inglés, con detección del idioma del nav
 ## Conexiones MCP duraderas
 
 La sesión OAuth admite hasta 400 días sin renovar y dos años de duración máxima. Los tokens de acceso duran cinco minutos y el cliente MCP debe renovar y guardar los tokens de forma automática y sin renovaciones simultáneas. Reconectar con el mismo usuario conserva las cuentas. Consulta [la guía de sesiones, renovación y diagnóstico](OAUTH-SESSIONS.md).
+
+## Respuestas dentro del hilo
+
+Usa `messages_reply` para responder a un mensaje existente. Indica los identificadores de `messages_read` (cuenta, carpeta, messageId y uidValidity IMAP), los destinatarios `to` revisados, `text` y `confirm: true`. El servidor recupera el original y construye `In-Reply-To`, `References` y el asunto `Re:`. Admite los mismos adjuntos que `messages_send`. Lee `replyTo` o `from` del original para elegir destinatarios; no responde a todos automáticamente. `messages_send` sigue creando conversaciones nuevas: añadir `Re:` no enlaza el hilo. [Contrato y pruebas](REPLIES.md).

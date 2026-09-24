@@ -101,7 +101,7 @@ test('Spanish MCP descriptions, errors, prompts and web links preserve identifie
     await server.connect(serverTransport);
     await client.connect(clientTransport);
     const tools = await client.listTools();
-    assert.equal(tools.tools.length, 16);
+    assert.equal(tools.tools.length, 17);
     assert.equal(
       tools.tools.find((t) => t.name === 'accounts_list')?.description,
       catalogs.es.mcp['tools.accounts_list'],

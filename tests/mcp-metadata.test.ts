@@ -42,7 +42,7 @@ test('MCP discovery delivers localized routing guidance and documented inputs wi
         assert.match(client.getInstructions()!.slice(0, 512), /accounts_list/);
         assert.equal(client.getServerVersion()?.title, catalogs[locale].mcp.server_title);
         const { tools } = await client.listTools();
-        assert.equal(tools.length, 16);
+        assert.equal(tools.length, 17);
         for (const tool of tools) {
           assert.ok(tool.title && !tool.title.startsWith('titles.'), tool.name);
           assert.equal(tool.description, catalogs[locale].mcp[`tools.${tool.name}`]);
@@ -108,6 +108,14 @@ test('MCP discovery delivers localized routing guidance and documented inputs wi
         assert.equal(limits.outgoingAttachmentTotalLimitBytes, MAX_OUTGOING_TOTAL_BYTES);
         assert.equal(limits.serverSideSearch, false);
         assert.equal(limits.draftStorage, false);
+        assert.equal(limits.replyThreadHeaders, true);
+        assert.ok(find('messages_reply').inputSchema.required?.includes('to'));
+        assert.ok(find('messages_reply').inputSchema.required?.includes('confirm'));
+        assert.equal(props('messages_reply').subject, undefined);
+        assert.equal(props('messages_reply').inReplyTo, undefined);
+        assert.equal(props('messages_reply').attachments.maxItems, 10);
+        assert.deepEqual(find('messages_reply').annotations, find('messages_send').annotations);
+        assert.match(client.getInstructions()!, /messages_reply/);
       } finally {
         await client.close();
         await server.close();

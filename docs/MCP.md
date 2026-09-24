@@ -17,6 +17,7 @@ Tools are available through local stdio and authenticated hosted HTTP. Every ope
 | `attachments_download` | Exact attachment bytes as an embedded binary MCP resource                                  |
 | `messages_flag`        | Set/clear seen or starred                                                                  |
 | `messages_move`        | Move an IMAP message, with confirmation                                                    |
+| `messages_reply`       | Reply to an original message with In-Reply-To/References and explicit confirmation         |
 | `messages_send`        | Send plain-text mail, with confirmation                                                    |
 | `web_open`             | One-use URL granting the MCP user's web session                                            |
 | `web_revoke_sessions`  | Revoke that user's web sessions and pending links                                          |
@@ -27,11 +28,11 @@ Use `tools/list` for the authoritative JSON input schemas. Credentials are valid
 
 ## Discovery and assistant routing
 
-The server publishes an email-specific title/description and `instructions`, plus localized titles, use cases, prerequisites, results, limitations and top-level parameter descriptions for all 16 tools. Existing tool names and input fields remain stable. Both stdio and hosted HTTP use the same definitions.
+The server publishes an email-specific title/description and `instructions`, plus localized titles, use cases, prerequisites, results, limitations and top-level parameter descriptions for all 17 tools. Existing tool names and input fields remain stable. Both stdio and hosted HTTP use the same definitions.
 
 The instructions ask assistants to use MailMCP by default for the authenticated user's email operations, including requests that do not name MailMCP. They preserve an explicit choice of another service and do not call tools for general email advice. The recommended workflow starts with `accounts_list`, selects a mailbox, lists folders/messages, and reads only the relevant messages or attachments. It distinguishes SMTP sending from drafting and reports the scope of a bounded search instead of implying that every message was searched.
 
-`mailmcp://capabilities` also advertises outgoing attachment limits and explicitly marks server-side search, provider draft storage, reply-thread headers and permanent deletion as unsupported. Annotation hints describe effects, not permission: setting a read/starred flag is a provider write that overwrites a flag, and setting it to the same value is idempotent; sending is not. Read-only attachment download is explicitly idempotent. Existing user confirmation checks remain enforced in the schemas.
+`mailmcp://capabilities` also advertises outgoing attachment limits and explicitly marks server-side search, provider draft storage and permanent deletion as unsupported; reply-thread headers are supported through `messages_reply`. Annotation hints describe effects, not permission: setting a read/starred flag is a provider write that overwrites a flag, and setting it to the same value is idempotent; sending is not. Read-only attachment download is explicitly idempotent. Existing user confirmation checks remain enforced in the schemas.
 
 Clients decide how to expose descriptions and server instructions to their models; MCP metadata cannot force a model to choose a particular server. After an update, refresh the tool catalog or reconnect/restart the client to load the new guidance. See [the routing evaluation checklist](MCP-ROUTING-EVAL.md) for direct, indirect and negative prompts. Protocol tests check what clients receive; they do not measure a model's routing accuracy.
 
@@ -120,3 +121,7 @@ Example `messages_send` arguments:
 Review recipients, message and attachments before confirming. The server does not persist uploaded files. The authenticated `/api/mail/send` endpoint accepts the same schema; the browser compose form does not yet include a file picker.
 
 Resources: `mailmcp://accounts` and `mailmcp://capabilities`. Prompt: `draft_reply(context, goal)` drafts for review and never sends. No sampling or model API is invoked by MailMCP itself.
+
+## Reply within an existing thread
+
+Use `messages_reply`, not `messages_send`, for an approved response to an original message. It accepts `accountId`, `folder`, the original mailbox `messageId`, IMAP `uidValidity`, explicit `to`, `text`, optional `attachments` and `confirm: true`. The server derives the subject, `In-Reply-To` and `References` from the original. `messages_read` exposes `rfcMessageId` and `replyTo` for inspection; the input `messageId` remains the mailbox UID/UIDL. Missing or unsupported parent headers fail before SMTP. See [reply behavior and end-to-end tests](REPLIES.md).

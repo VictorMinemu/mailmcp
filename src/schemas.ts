@@ -121,6 +121,19 @@ export const sendSchema = idSchema
       MAX_OUTGOING_TOTAL_BYTES,
     'Attachments exceed the 25 MB total limit.',
   );
+export const replySchema = readSchema
+  .extend({
+    to: sendSchema.shape.to,
+    text: sendSchema.shape.text.refine((value) => value.trim().length > 0),
+    attachments: sendSchema.shape.attachments,
+    confirm: sendSchema.shape.confirm,
+  })
+  .refine(
+    (p) =>
+      (p.attachments ?? []).reduce((total, a) => total + base64Bytes(a.contentBase64), 0) <=
+      MAX_OUTGOING_TOTAL_BYTES,
+    'Attachments exceed the 25 MB total limit.',
+  );
 export const flagSchema = idSchema.extend({
   folder: line.default('INBOX'),
   uid: z.number().int().positive(),

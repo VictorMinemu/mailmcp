@@ -17,6 +17,7 @@ import {
   listSchema,
   readSchema,
   sendSchema,
+  replySchema,
   flagSchema,
   moveSchema,
   line,
@@ -233,6 +234,15 @@ export function createMcp(services: Services, owner: string, locale: Locale = 'e
     true,
   );
   tool(
+    'messages_reply',
+    m('tools.messages_reply'),
+    replySchema,
+    (p) => mail.reply(owner, p),
+    false,
+    true,
+    true,
+  );
+  tool(
     'web_open',
     m('tools.web_open'),
     z.object({ language: z.enum(['en', 'es']).optional() }).strict(),
@@ -290,7 +300,7 @@ export function createMcp(services: Services, owner: string, locale: Locale = 'e
             outgoingAttachmentCountLimit: MAX_OUTGOING_ATTACHMENTS,
             serverSideSearch: false,
             draftStorage: false,
-            replyThreadHeaders: false,
+            replyThreadHeaders: true,
             permanentDeletion: false,
             imapFlags: ['seen', 'starred'],
             accountLimit: 20,

@@ -14,6 +14,7 @@ MailMCP is open-source software with a **free hosted service at [mailmcp.org](ht
 - IMAP folders, message listing and reading, seen/starred flags, moving messages and creating folders.
 - POP3 over implicit TLS: UIDL listing and message retrieval, without deleting mail.
 - SMTP text messages with explicit confirmation. Supports TLS or mandatory STARTTLS.
+- **Reply within a thread**: `messages_reply` derives `In-Reply-To`, `References` and the reply subject from the original message, with explicit recipient and send confirmation.
 - **Send attachments through MCP**: up to 10 files, 25 MB per file and 25 MB total, using `messages_send`.
 - **List and download attachments through MCP**, returning an embedded binary resource; download the same attachments in the browser.
 - `web_open`: a one-time, 60-second URL opening a browser session for the authenticated MCP user.

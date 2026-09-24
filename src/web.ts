@@ -228,12 +228,9 @@ export function createWeb(config: Config, services: Services, identity?: Identit
           }
         }
         if (req.method === 'POST' && path.startsWith('/api/mail/')) {
-          if (path === '/api/mail/send' && needsReservation(req))
-            releaseRequest = reserveRequest(owner);
-          const input = await body(
-            req,
-            path === '/api/mail/send' ? MAX_SEND_REQUEST_BYTES : 262_144,
-          );
+          const outgoing = path === '/api/mail/send' || path === '/api/mail/reply';
+          if (outgoing && needsReservation(req)) releaseRequest = reserveRequest(owner);
+          const input = await body(req, outgoing ? MAX_SEND_REQUEST_BYTES : 262_144);
           let result: unknown;
           switch (path.slice('/api/mail/'.length)) {
             case 'verify':
@@ -256,6 +253,9 @@ export function createWeb(config: Config, services: Services, identity?: Identit
               break;
             case 'send':
               result = await services.mail.send(owner, input);
+              break;
+            case 'reply':
+              result = await services.mail.reply(owner, input);
               break;
             case 'flag':
               result = await services.mail.flag(owner, input);
