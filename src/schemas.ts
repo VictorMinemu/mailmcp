@@ -63,11 +63,19 @@ export const accountPatch = z
   })
   .strict();
 export const idSchema = z.object({ accountId: z.uuid() }).strict();
-export const listSchema = idSchema.extend({
-  folder: line.default('INBOX'),
-  limit: z.number().int().min(1).max(50).default(20),
-  before: z.number().int().min(1).optional(),
-});
+export const listSchema = idSchema
+  .extend({
+    folder: line.default('INBOX'),
+    limit: z.number().int().min(1).max(50).default(20),
+    before: z.number().int().min(1).optional(),
+    beforeUid: z.number().int().positive().optional(),
+    uidValidity: z.string().regex(/^\d+$/).optional(),
+  })
+  .refine((p) => p.before === undefined || p.beforeUid === undefined, 'Use one pagination cursor.')
+  .refine(
+    (p) => p.beforeUid === undefined || p.uidValidity !== undefined,
+    'UID pagination requires UIDVALIDITY.',
+  );
 const isoDay = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -108,6 +116,7 @@ export const searchSchema = idSchema
     maxSize: z.number().int().min(1).max(1_000_000_000).optional(),
     limit: z.number().int().min(1).max(50).default(20),
     beforeUid: z.number().int().positive().optional(),
+    uidValidity: z.string().regex(/^\d+$/).optional(),
   })
   .refine(
     (p) => SEARCH_CRITERIA.some((key) => p[key] !== undefined),
@@ -125,6 +134,10 @@ export const readSchema = idSchema.extend({
   folder: line.default('INBOX'),
   messageId: line,
   uidValidity: z.string().regex(/^\d+$/).optional(),
+});
+export const messageReadSchema = readSchema.extend({
+  maxChars: z.number().int().min(1).max(100_000).default(100_000),
+  offset: z.number().int().min(0).max(10_000_000).default(0),
 });
 export const outgoingAttachmentSchema = z
   .object({
@@ -154,28 +167,36 @@ export const outgoingAttachmentSchema = z
       ),
   })
   .strict();
+export const outgoingFileSchema = z.union([
+  outgoingAttachmentSchema,
+  z.object({ attachmentId: z.uuid() }).strict(),
+]);
 export const sendSchema = idSchema
   .extend({
+    operationId: z.uuid().optional(),
     to: z.array(z.email().max(254)).min(1).max(20),
     subject: line,
     text: z.string().min(1).max(100_000),
     attachments: z
-      .array(outgoingAttachmentSchema)
+      .array(outgoingFileSchema)
       .max(MAX_OUTGOING_ATTACHMENTS)
       .optional()
       .describe(
-        'Optional files: at most 10, 25 MB each, 25 MB decoded total. Only inline bytes; no file paths or URLs.',
+        'Optional files: at most 10, 25 MB each, 25 MB decoded total. Inline bytes or an attachmentId returned by attachments_upload/attachments_reuse; no file paths or URLs.',
       ),
     confirm: z.literal(true),
   })
   .refine(
     (p) =>
-      (p.attachments ?? []).reduce((total, a) => total + base64Bytes(a.contentBase64), 0) <=
-      MAX_OUTGOING_TOTAL_BYTES,
+      (p.attachments ?? []).reduce(
+        (total, a) => total + ('contentBase64' in a ? base64Bytes(a.contentBase64) : 0),
+        0,
+      ) <= MAX_OUTGOING_TOTAL_BYTES,
     'Attachments exceed the 25 MB total limit.',
   );
 export const replySchema = readSchema
   .extend({
+    operationId: sendSchema.shape.operationId,
     to: sendSchema.shape.to,
     text: sendSchema.shape.text.refine((value) => value.trim().length > 0),
     attachments: sendSchema.shape.attachments,
@@ -183,8 +204,10 @@ export const replySchema = readSchema
   })
   .refine(
     (p) =>
-      (p.attachments ?? []).reduce((total, a) => total + base64Bytes(a.contentBase64), 0) <=
-      MAX_OUTGOING_TOTAL_BYTES,
+      (p.attachments ?? []).reduce(
+        (total, a) => total + ('contentBase64' in a ? base64Bytes(a.contentBase64) : 0),
+        0,
+      ) <= MAX_OUTGOING_TOTAL_BYTES,
     'Attachments exceed the 25 MB total limit.',
   );
 export const flagSchema = idSchema.extend({

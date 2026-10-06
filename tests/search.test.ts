@@ -221,6 +221,23 @@ test(
         senderName: 'Alice',
         incoming: { ...connection, protocol: 'imap' },
       });
+      const listed = await mail.list('alice', { accountId: account.id, limit: 2 });
+      assert.equal(listed.nextBeforeUid, 4809);
+      assert.deepEqual(
+        listed.messages.map((m) => m.messageId),
+        ['4821', '4809'],
+      );
+      assert.equal(listed.messages[0]!.messageRef.uidValidity, '42');
+      const older = await mail.list('alice', {
+        accountId: account.id,
+        beforeUid: listed.nextBeforeUid!,
+        uidValidity: listed.uidValidity,
+        limit: 2,
+      });
+      assert.deepEqual(
+        older.messages.map((m) => m.messageId),
+        ['7'],
+      );
       const first = await mail.search('alice', {
         accountId: account.id,
         sender: 'ana',
@@ -243,7 +260,7 @@ test(
       assert.deepEqual(first.messages[0]!.from, [{ name: 'Ana', address: 'ana@example.com' }]);
       assert.deepEqual(first.messages[0]!.flags, []);
       assert.equal(first.messages[0]!.size, 4821 * 3);
-      const search = commands.find((c) => /UID SEARCH/.test(c))!;
+      const search = commands.find((c) => /UID SEARCH.*FROM/.test(c))!;
       assert.match(search, /FROM "?ana"?/);
       assert.match(search, /SUBJECT "?Q3"?/);
       assert.match(search, /SINCE 0?1-Sep-2026/);

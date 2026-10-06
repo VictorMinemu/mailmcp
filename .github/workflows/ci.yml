@@ -61,6 +61,8 @@ jobs:
       - run: npm ci
       - run: npm run format:check
       - run: npm run check
+      - name: Verify real-agent evaluation evidence matches MCP source
+        run: npm run eval:check
       - run: npm audit --omit=dev --audit-level=high
   container:
     runs-on: ubuntu-latest

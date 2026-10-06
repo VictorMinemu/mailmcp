@@ -199,6 +199,25 @@ test('MCP messages_send produces exact multipart attachment bytes and enforces o
     await mail.send('alice', { ...send, accountId: account.id });
     assert.equal((await simpleParser(emitted!)).attachments.length, 0);
     assert.equal(closed, 2);
+    const staged = await client.callTool({
+      name: 'attachments_upload',
+      arguments: { accountId: account.id, file: args.attachments[0] },
+    });
+    assert.notEqual(staged.isError, true);
+    const metadata = JSON.parse((staged.content as any[])[0].text);
+    const referenced = await client.callTool({
+      name: 'messages_send',
+      arguments: {
+        ...send,
+        accountId: account.id,
+        attachments: [{ attachmentId: metadata.attachmentId }],
+      },
+    });
+    assert.notEqual(referenced.isError, true, JSON.stringify(referenced));
+    const referencedMime = await simpleParser(emitted!);
+    assert.deepEqual(referencedMime.attachments[0]!.content, binary);
+    assert.equal(referencedMime.attachments[0]!.filename, 'datos.bin');
+    assert.equal(closed, 3);
   } finally {
     await client.close();
     await mcp.close();

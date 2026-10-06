@@ -19,7 +19,11 @@ MailMCP is open-source software with a **free hosted service at [mailmcp.org](ht
 - **Send attachments through MCP**: up to 10 files, 25 MB per file and 25 MB total, using `messages_send`.
 - **List and download attachments through MCP**, returning an embedded binary resource; download the same attachments in the browser.
 - `web_open`: a one-time, 60-second URL opening a browser session for the authenticated MCP user.
-- Tools, account/capability resources and a drafting prompt using the official MCP TypeScript SDK.
+- Tools with typed structured results, localized field errors and recovery hints; account/capability resources and a drafting prompt using the official MCP TypeScript SDK.
+- Message body pagination with a 10,000-character MCP default, shared-budget batch reads and RFC conversation discovery within an IMAP folder.
+- Per-account capabilities, reusable message references and UID-based listing cursors.
+- Temporary attachment upload/reuse IDs with account ownership, expiry and memory limits.
+- Process-local send operation receipts and optional UUID deduplication, including explicit uncertain outcomes.
 - Encrypted account storage, isolated user ownership, restricted network destinations and ephemeral browser sessions.
 - Local stdio mode and hosted HTTP MCP with OAuth access-token validation and OIDC web login.
 
@@ -29,7 +33,7 @@ MailMCP is open-source software with a **free hosted service at [mailmcp.org](ht
 
 Anyone can use MailMCP at [https://mailmcp.org/](https://mailmcp.org/) at no cost: no card, no trial, no paid tier. Create an account with the identity provider, connect your existing IMAP, POP3 or SMTP accounts in the browser, and point any MCP client at `https://mailmcp.org/mcp`; the client discovers the OAuth authorization server through the published protected-resource metadata and signs in with the same identity.
 
-The hosted service runs this repository's code under the same rules as a self-hosted instance: mail is fetched on demand and never written to disk, there is no access or body logging, and only encrypted connection settings are stored. Removing a connection deletes its credentials. The operator holds the master key, so it is not end-to-end encryption; read the [security policy](SECURITY.md) for the exact threat model and self-host if you need to hold the key yourself.
+The hosted service runs this repository's code under the same rules as a self-hosted instance: mail is fetched on demand and never written to disk, there is no access or body logging, and connection settings are encrypted on disk. Staged attachments remain in memory for up to 15 minutes; send receipts for up to 24 hours. Both disappear on restart. Removing a connection deletes its credentials. The operator holds the master key, so it is not end-to-end encryption; read the [security policy](SECURITY.md) for the exact threat model and self-host if you need to hold the key yourself.
 
 ## Local quick start
 
@@ -102,7 +106,7 @@ npm run check
 npm run dev
 ```
 
-`check` runs type checking, automated tests and compilation. Tests use synthetic mail and temporary encrypted vaults; no live accounts or outbound message delivery are needed. CI also builds the container. The development command is a stdio MCP server, so run it from a client or use `web_open` through the client for access.
+`check` runs type checking, automated tests and compilation. Tests use synthetic mail and temporary encrypted vaults; no live accounts or outbound message delivery are needed. CI also builds the container and checks recorded actual-agent eval evidence against the current source. Run `npm run eval:agents` with an installed, authenticated Codex CLI after MCP/eval behavior changes; `npm run eval:check` verifies the tracked 50-case bilingual report without invoking a model. The development command is a stdio MCP server, so run it from a client or use `web_open` through the client for access.
 
 ## Current boundaries
 

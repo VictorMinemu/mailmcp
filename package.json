@@ -17,7 +17,9 @@
     "test": "tsx --test tests/*.test.ts",
     "check": "npm run typecheck && npm test && npm run build",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "eval:agents": "node scripts/eval-agents.mjs",
+    "eval:check": "node scripts/check-eval-results.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.0.0",

@@ -5,6 +5,21 @@ import type { Accounts } from './accounts.js';
 import type { Mail } from './mail.js';
 import type { Auth } from './auth.js';
 import { publicError } from './errors.js';
+import { arrayResultKeys, outputSchemas } from './outputs.js';
+import { withMessageRef, resolveMessageReference } from './references.js';
+import {
+  batchReadSchema,
+  threadReadSchema,
+  attachmentUploadSchema,
+  attachmentRemoveSchema,
+  sendStatusSchema,
+} from './workflow-schemas.js';
+import {
+  ATTACHMENT_TTL_MS,
+  ATTACHMENT_OWNER_BYTES,
+  ATTACHMENT_GLOBAL_BYTES,
+} from './temporary-attachments.js';
+import { SEND_OPERATION_TTL_MS } from './send-operations.js';
 import {
   MAX_OUTGOING_ATTACHMENTS,
   MAX_OUTGOING_ATTACHMENT_BYTES,
@@ -17,6 +32,7 @@ import {
   listSchema,
   searchSchema,
   readSchema,
+  messageReadSchema,
   sendSchema,
   replySchema,
   flagSchema,
@@ -51,6 +67,22 @@ export function createMcp(services: Services, owner: string, locale: Locale = 'e
     );
     return schema.safeExtend(shape);
   }
+  // Keep SDK input validation while exposing safe, localized errors through its
+  // error boundary instead of the SDK's free-form validation text.
+  function wireInput(schema: z.ZodObject, sending = false): StandardSchemaWithJSON {
+    const described = describedInput(schema);
+    return {
+      '~standard': {
+        ...described['~standard'],
+        validate(value: unknown) {
+          const result = described.safeParse(value);
+          if (!result.success)
+            throw new Error(JSON.stringify(publicError(result.error, locale, sending)));
+          return { value: result.data };
+        },
+      },
+    };
+  }
   function tool<T extends z.ZodObject>(
     name: string,
     description: string,
@@ -66,7 +98,8 @@ export function createMcp(services: Services, owner: string, locale: Locale = 'e
       {
         title: m(`titles.${name}`),
         description,
-        inputSchema: describedInput(schema),
+        inputSchema: wireInput(schema, name === 'messages_send' || name === 'messages_reply'),
+        outputSchema: outputSchemas[name],
         annotations: {
           readOnlyHint: readOnly,
           destructiveHint: destructive,
@@ -77,11 +110,26 @@ export function createMcp(services: Services, owner: string, locale: Locale = 'e
       async (input) => {
         try {
           const result = await action(schema.parse(input) as z.output<T>);
-          return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
+          const normalized = JSON.parse(JSON.stringify(result));
+          const key = arrayResultKeys[name];
+          const structured = key ? { [key]: normalized } : normalized;
+          if (!outputSchemas[name]!.safeParse(structured).success)
+            throw new Error('Invalid service output');
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify(normalized) }],
+            structuredContent: structured,
+          };
         } catch (error) {
           return {
             isError: true,
-            content: [{ type: 'text' as const, text: JSON.stringify(publicError(error, locale)) }],
+            content: [
+              {
+                type: 'text' as const,
+                text: JSON.stringify(
+                  publicError(error, locale, name === 'messages_send' || name === 'messages_reply'),
+                ),
+              },
+            ],
           };
         }
       },
@@ -162,7 +210,9 @@ export function createMcp(services: Services, owner: string, locale: Locale = 'e
   tool(
     'messages_read',
     m('tools.messages_read'),
-    readSchema,
+    withMessageRef(
+      messageReadSchema.extend({ maxChars: messageReadSchema.shape.maxChars.default(10_000) }),
+    ),
     (p) => mail.read(owner, p),
     true,
     false,
@@ -171,7 +221,7 @@ export function createMcp(services: Services, owner: string, locale: Locale = 'e
   tool(
     'attachments_list',
     m('tools.attachments_list'),
-    readSchema,
+    withMessageRef(readSchema),
     (p) => mail.attachments(owner, p),
     true,
     false,
@@ -182,7 +232,8 @@ export function createMcp(services: Services, owner: string, locale: Locale = 'e
     {
       title: m('titles.attachments_download'),
       description: m('tools.attachments_download'),
-      inputSchema: describedInput(attachmentSchema),
+      inputSchema: wireInput(withMessageRef(attachmentSchema)),
+      outputSchema: outputSchemas.attachments_download,
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,
@@ -192,9 +243,12 @@ export function createMcp(services: Services, owner: string, locale: Locale = 'e
     },
     async (input) => {
       try {
-        const p = attachmentSchema.parse(input);
+        const p = attachmentSchema.parse(resolveMessageReference(input));
         const { contentBase64, ...metadata } = await mail.attachment(owner, p);
+        if (!outputSchemas.attachments_download!.safeParse(metadata).success)
+          throw new Error('Invalid attachment metadata');
         return {
+          structuredContent: metadata,
           content: [
             { type: 'text' as const, text: JSON.stringify(metadata) },
             {
@@ -218,7 +272,7 @@ export function createMcp(services: Services, owner: string, locale: Locale = 'e
   tool(
     'messages_flag',
     m('tools.messages_flag'),
-    flagSchema,
+    withMessageRef(flagSchema, true),
     (p) => mail.flag(owner, p),
     false,
     true,
@@ -228,7 +282,7 @@ export function createMcp(services: Services, owner: string, locale: Locale = 'e
   tool(
     'messages_move',
     m('tools.messages_move'),
-    moveSchema,
+    withMessageRef(moveSchema, true),
     (p) => mail.move(owner, p),
     false,
     true,
@@ -246,10 +300,55 @@ export function createMcp(services: Services, owner: string, locale: Locale = 'e
   tool(
     'messages_reply',
     m('tools.messages_reply'),
-    replySchema,
+    withMessageRef(replySchema),
     (p) => mail.reply(owner, p),
     false,
     true,
+    true,
+  );
+  tool(
+    'messages_read_batch',
+    m('tools.messages_read_batch'),
+    batchReadSchema,
+    (p) => mail.readBatch(owner, p, locale),
+    true,
+    false,
+    true,
+  );
+  tool(
+    'messages_thread',
+    m('tools.messages_thread'),
+    threadReadSchema,
+    (p) => mail.thread(owner, p, locale),
+    true,
+    false,
+    true,
+  );
+  tool('messages_send_status', m('tools.messages_send_status'), sendStatusSchema, (p) =>
+    mail.sendStatus(owner, p),
+  );
+  tool(
+    'attachments_upload',
+    m('tools.attachments_upload'),
+    attachmentUploadSchema,
+    (p) => mail.uploadAttachment(owner, p),
+    false,
+  );
+  tool(
+    'attachments_reuse',
+    m('tools.attachments_reuse'),
+    withMessageRef(attachmentSchema),
+    (p) => mail.reuseAttachment(owner, p),
+    true,
+    false,
+    true,
+  );
+  tool(
+    'attachments_remove_upload',
+    m('tools.attachments_remove_upload'),
+    attachmentRemoveSchema,
+    (p) => mail.removeUpload(owner, p),
+    false,
     true,
   );
   tool(
@@ -304,6 +403,25 @@ export function createMcp(services: Services, owner: string, locale: Locale = 'e
             messageLimitBytes: 10_000_000,
             attachmentLimitBytes: 5_000_000,
             attachmentDownloads: true,
+            structuredToolResults: true,
+            accountCapabilities: true,
+            uniformMessageReferences: true,
+            uidListPagination: true,
+            batchReads: true,
+            batchReadCountLimit: 10,
+            batchReadTotalCharsLimit: 100_000,
+            threadDiscovery: true,
+            threadScope: 'folder',
+            temporaryAttachments: true,
+            temporaryAttachmentTtlSeconds: ATTACHMENT_TTL_MS / 1000,
+            temporaryAttachmentOwnerBytes: ATTACHMENT_OWNER_BYTES,
+            temporaryAttachmentGlobalBytes: ATTACHMENT_GLOBAL_BYTES,
+            sendTracking: true,
+            sendOperationTtlSeconds: SEND_OPERATION_TTL_MS / 1000,
+            sendTrackingPersistent: false,
+            messageBodyPagination: true,
+            messageReadDefaultChars: 10_000,
+            messageReadMaxChars: 100_000,
             outgoingAttachments: true,
             outgoingAttachmentLimitBytes: MAX_OUTGOING_ATTACHMENT_BYTES,
             outgoingAttachmentTotalLimitBytes: MAX_OUTGOING_TOTAL_BYTES,

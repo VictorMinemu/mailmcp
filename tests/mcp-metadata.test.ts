@@ -42,11 +42,12 @@ test('MCP discovery delivers localized routing guidance and documented inputs wi
         assert.match(client.getInstructions()!.slice(0, 512), /accounts_list/);
         assert.equal(client.getServerVersion()?.title, catalogs[locale].mcp.server_title);
         const { tools } = await client.listTools();
-        assert.equal(tools.length, 18);
+        assert.equal(tools.length, 24);
         for (const tool of tools) {
           assert.ok(tool.title && !tool.title.startsWith('titles.'), tool.name);
           assert.equal(tool.description, catalogs[locale].mcp[`tools.${tool.name}`]);
           assert.equal(tool.inputSchema.type, 'object');
+          assert.equal(tool.outputSchema?.type, 'object', tool.name);
           assert.equal(tool.inputSchema.additionalProperties, false, tool.name);
           for (const [name, schema] of Object.entries(tool.inputSchema.properties ?? {})) {
             const description = (schema as { description?: string }).description;
@@ -61,6 +62,11 @@ test('MCP discovery delivers localized routing guidance and documented inputs wi
         assert.match(props('messages_read').messageId.description, /Message-ID/);
         assert.match(props('messages_list').before.description, /nextBefore/);
         assert.equal(props('messages_list').limit.maximum, 50);
+        assert.equal(props('messages_read').maxChars.default, 10_000);
+        assert.equal(props('messages_read').maxChars.maximum, 100_000);
+        assert.equal(props('messages_read').offset.default, 0);
+        assert.equal(props('attachments_list').maxChars, undefined);
+        assert.equal(props('messages_reply').offset, undefined);
         assert.equal(props('messages_list').folder.default, 'INBOX');
         assert.equal(props('attachments_download').index.minimum, 0);
         assert.equal(props('messages_send').confirm.const, true);
@@ -80,6 +86,10 @@ test('MCP discovery delivers localized routing guidance and documented inputs wi
         });
         assert.equal(find('web_open').annotations?.readOnlyHint, false);
         assert.equal(find('attachments_download').annotations?.idempotentHint, true);
+        assert.deepEqual(
+          find('attachments_reuse').annotations,
+          find('attachments_download').annotations,
+        );
 
         const invalid = await client.callTool({
           name: 'messages_send',
@@ -92,6 +102,11 @@ test('MCP discovery delivers localized routing guidance and documented inputs wi
           },
         });
         assert.equal(invalid.isError, true);
+        const invalidError = JSON.parse((invalid.content as any[])[0].text);
+        assert.equal(invalidError.code, 'INVALID_INPUT');
+        assert.equal(invalidError.suggestedAction, 'correct_input');
+        assert.equal(invalidError.retryable, false);
+        assert.equal(invalidError.fieldErrors[0].path, 'confirm');
         const unknownField = await client.callTool({
           name: 'accounts_list',
           arguments: { owner: 'other-user' },

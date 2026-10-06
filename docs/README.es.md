@@ -9,6 +9,8 @@ Hay dos modos:
 - **Local:** MCP por stdio y panel en localhost. El proceso pertenece al usuario del sistema.
 - **Alojado:** dominio público con HTTPS, usuarios aislados, acceso MCP con OAuth e inicio de sesión web con OIDC. El proveedor de identidad gestiona el registro de usuarios; no se crean buzones de correo.
 
+Las 24 herramientas publican esquemas de salida y resultados estructurados compatibles con el JSON de texto existente. Los errores indican el campo y la acción sugerida. La lectura por MCP devuelve hasta 10.000 caracteres por defecto y permite continuar con `nextOffset`; consulta [la referencia de herramientas](MCP.md).
+
 ## Conectar tu asistente al servicio gratuito
 
 Copia el [prompt de instalación de la página principal](https://mailmcp.org/#install) o sigue la [guía de Codex y solución de problemas de OAuth](../web/install.md#español). Añadir el servidor e iniciar sesión son pasos distintos. La guía explica cómo continuar si no se abre el navegador y qué hacer si Codex se ejecuta en una máquina remota.
@@ -35,7 +37,7 @@ Límites de descarga: mensajes de hasta 10 MB y adjuntos individuales de hasta 5
 
 Cualquier persona puede usar MailMCP en [https://mailmcp.org/](https://mailmcp.org/) sin coste: sin tarjeta, sin prueba limitada, sin plan de pago. Crea una cuenta en el proveedor de identidad, conecta tus cuentas IMAP, POP3 o SMTP desde el navegador y apunta tu cliente MCP a `https://mailmcp.org/mcp`; el cliente descubre el servidor OAuth mediante los metadatos publicados e inicia sesión con la misma identidad.
 
-El servicio ejecuta el código de este repositorio con las mismas reglas que una instancia autoalojada: el correo se obtiene bajo demanda y nunca se escribe en disco, no hay registro de accesos ni de contenidos, y solo se guarda la configuración de conexión cifrada. Eliminar una conexión borra sus credenciales. El operador posee la clave maestra, así que no es cifrado de extremo a extremo; consulta la [política de seguridad](../SECURITY.md) y autoalójalo si necesitas controlar la clave.
+El servicio ejecuta el código de este repositorio con las mismas reglas que una instancia autoalojada: el correo se obtiene bajo demanda y nunca se escribe en disco, no hay registro de accesos ni de contenidos, y la configuración de conexión se guarda cifrada en disco. Los adjuntos preparados permanecen en memoria hasta 15 minutos; los recibos de envío, hasta 24 horas. Ambos desaparecen al reiniciar. Eliminar una conexión borra sus credenciales. El operador posee la clave maestra, así que no es cifrado de extremo a extremo; consulta la [política de seguridad](../SECURITY.md) y autoalójalo si necesitas controlar la clave.
 
 ## Alojarlo en tu propio dominio
 
@@ -49,7 +51,7 @@ La web está disponible en español e inglés, con detección del idioma del nav
 
 ## Enviar archivos adjuntos
 
-`messages_send` admite `attachments`: una lista con `filename`, `contentBase64` y `contentType` opcional. Hasta **25 MB por archivo, 25 MB en total por correo y 10 archivos** (MB decimal). El cliente MCP lee el archivo y lo codifica en base64 estándar; no se aceptan rutas ni URLs. Revisa el correo y los archivos antes de usar `confirm: true`. El proveedor SMTP puede imponer un límite menor sobre el mensaje MIME final. Consulta el ejemplo en [la referencia MCP](MCP.md).
+`messages_send` admite `attachments`: una lista con `filename`, `contentBase64` y `contentType` opcional. Hasta **25 MB por archivo, 25 MB en total por correo y 10 archivos** (MB decimal). El cliente MCP lee el archivo y lo codifica en base64 estándar; no se aceptan rutas ni URLs. Revisa el correo y los archivos antes de usar `confirm: true`. El proveedor SMTP puede imponer un límite menor sobre el mensaje MIME final. Puedes usar `attachments_upload` o `attachments_reuse` y pasar `attachmentId` en lugar de repetir los bytes. Los archivos temporales duran 15 minutos en memoria y están vinculados a tu cuenta. Consulta el ejemplo en [la referencia MCP](MCP.md).
 
 ## Conexiones MCP duraderas
 
@@ -58,3 +60,11 @@ La sesión OAuth admite hasta 400 días sin renovar y dos años de duración má
 ## Respuestas dentro del hilo
 
 Usa `messages_reply` para responder a un mensaje existente. Indica los identificadores de `messages_read` (cuenta, carpeta, messageId y uidValidity IMAP), los destinatarios `to` revisados, `text` y `confirm: true`. El servidor recupera el original y construye `In-Reply-To`, `References` y el asunto `Re:`. Admite los mismos adjuntos que `messages_send`. Lee `replyTo` o `from` del original para elegir destinatarios; no responde a todos automáticamente. `messages_send` sigue creando conversaciones nuevas: añadir `Re:` no enlaza el hilo. [Contrato y pruebas](REPLIES.md).
+
+## Flujos para asistentes
+
+Las cuentas indican sus capacidades. Copia `messageRef` en las acciones sobre mensajes y usa `beforeUid` con `uidValidity` para continuar un listado estable. `messages_read_batch` comparte un presupuesto entre varios mensajes; `messages_thread` busca una conversación dentro de una carpeta IMAP.
+
+Al enviar o responder, usa un `operationId` estable para evitar duplicados de llamadas idénticas y consulta `messages_send_status` ante fallos. Los recibos duran 24 horas en memoria y desaparecen al reiniciar. La aceptación SMTP no prueba la entrega final; un estado desconocido requiere comprobar el proveedor antes de reenviar.
+
+`npm run eval:agents` evalúa 50 casos con Codex y correo sintético en español e inglés. `npm run eval:check` comprueba que el informe corresponda al código actual.

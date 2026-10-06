@@ -324,6 +324,51 @@ test('hosted HTTP transport scopes every MCP request and web link to the OAuth s
       ).status,
       413,
     );
+    const stagedFile = { accountId: created.id, file: smallUpload.attachments[0] };
+    const deniedStage = await bob.callTool({ name: 'attachments_upload', arguments: stagedFile });
+    assert.equal(deniedStage.isError, true);
+    assert.equal(parsed(deniedStage).code, 'NOT_FOUND');
+    assert.equal(
+      (
+        await rawFetch(`${base}/api/mail/upload`, {
+          method: 'POST',
+          headers: apiHeaders,
+          body: JSON.stringify(stagedFile),
+        })
+      ).status,
+      404,
+    );
+    const aliceHeaders = { ...apiHeaders, cookie: `__Host-mailmcp=${auth.session('alice')}` };
+    const stagedResponse = await rawFetch(`${base}/api/mail/upload`, {
+      method: 'POST',
+      headers: aliceHeaders,
+      body: JSON.stringify(stagedFile),
+    });
+    assert.equal(stagedResponse.status, 200);
+    const stagedMetadata = await stagedResponse.json();
+    assert.equal(stagedMetadata.size, 300_000);
+    assert.equal(stagedMetadata.contentBase64, undefined);
+    const removal = { accountId: created.id, attachmentId: stagedMetadata.attachmentId };
+    assert.equal(
+      (
+        await rawFetch(`${base}/api/mail/remove-upload`, {
+          method: 'POST',
+          headers: apiHeaders,
+          body: JSON.stringify(removal),
+        })
+      ).status,
+      404,
+    );
+    assert.equal(
+      (
+        await rawFetch(`${base}/api/mail/remove-upload`, {
+          method: 'POST',
+          headers: aliceHeaders,
+          body: JSON.stringify(removal),
+        })
+      ).status,
+      200,
+    );
     // Reject declared oversize before buffering, and authenticate before inspecting uploads.
     for (const [authorization, expected] of [
       ['Bearer bob-token', 413],
