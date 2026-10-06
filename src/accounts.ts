@@ -4,6 +4,25 @@ import type { Vault } from './vault.js';
 import { AppError } from './errors.js';
 import { assertMailHostAllowed } from './network.js';
 
+export function accountCapabilities(account: Account) {
+  const incoming = Boolean(account.incoming),
+    imap = account.incoming?.protocol === 'imap',
+    smtp = Boolean(account.smtp);
+  return {
+    read: incoming,
+    search: imap,
+    send: smtp,
+    reply: incoming && smtp,
+    attachments: incoming,
+    listFolders: incoming,
+    createFolders: imap,
+    flag: imap,
+    move: imap,
+    uidPagination: imap,
+    batchRead: incoming,
+    threadRead: imap,
+  };
+}
 export function redact(account: Account) {
   const { owner: _owner, incoming, smtp, ...profile } = account;
   const safe = (v: typeof incoming | typeof smtp) => {
@@ -11,7 +30,12 @@ export function redact(account: Account) {
     const { password: _secret, ...fields } = v;
     return { ...fields, hasPassword: true };
   };
-  return { ...profile, incoming: safe(incoming), smtp: safe(smtp) };
+  return {
+    ...profile,
+    incoming: safe(incoming),
+    smtp: safe(smtp),
+    capabilities: accountCapabilities(account),
+  };
 }
 export class Accounts {
   constructor(

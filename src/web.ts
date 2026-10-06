@@ -228,7 +228,8 @@ export function createWeb(config: Config, services: Services, identity?: Identit
           }
         }
         if (req.method === 'POST' && path.startsWith('/api/mail/')) {
-          const outgoing = path === '/api/mail/send' || path === '/api/mail/reply';
+          const outgoing =
+            path === '/api/mail/send' || path === '/api/mail/reply' || path === '/api/mail/upload';
           if (outgoing && needsReservation(req)) releaseRequest = reserveRequest(owner);
           const input = await body(req, outgoing ? MAX_SEND_REQUEST_BYTES : 262_144);
           let result: unknown;
@@ -250,6 +251,24 @@ export function createWeb(config: Config, services: Services, identity?: Identit
               break;
             case 'read':
               result = await services.mail.read(owner, input);
+              break;
+            case 'read-batch':
+              result = await services.mail.readBatch(owner, input, locale);
+              break;
+            case 'thread':
+              result = await services.mail.thread(owner, input, locale);
+              break;
+            case 'upload':
+              result = services.mail.uploadAttachment(owner, input);
+              break;
+            case 'reuse-attachment':
+              result = await services.mail.reuseAttachment(owner, input);
+              break;
+            case 'remove-upload':
+              result = services.mail.removeUpload(owner, input);
+              break;
+            case 'send-status':
+              result = services.mail.sendStatus(owner, input);
               break;
             case 'send':
               result = await services.mail.send(owner, input);
@@ -307,7 +326,11 @@ export function createWeb(config: Config, services: Services, identity?: Identit
           'www-authenticate',
           `Bearer resource_metadata="${config.origin}/.well-known/oauth-protected-resource/mcp", scope="${config.scope}"`,
         );
-      json(res, publicError(error, locale), status);
+      json(
+        res,
+        publicError(error, locale, /^\/api\/mail\/(send|reply)(?:\?|$)/.test(req.url ?? '')),
+        status,
+      );
     } finally {
       releaseRequest?.();
     }

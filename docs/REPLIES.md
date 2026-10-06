@@ -21,6 +21,8 @@ Use `messages_reply` for an approved response to an existing message. `messages_
 }
 ```
 
+You may supply the returned `messageRef` instead of the flat identity fields. Never mix both forms. For sending attachments, use either validated inline files or temporary `attachmentId` objects from upload/reuse on the same account.
+
 The account needs incoming access and SMTP. IMAP requires the matching `uidValidity`; POP3 uses its opaque UIDL and INBOX. Optional `attachments` use the same schema and limits as `messages_send`: 10 files, 25 MB decoded per file and total. Replies and new messages share the 20-per-hour send limit per owner.
 
 `messageId` in the input is the mailbox UID/UIDL. It is **not** the RFC `Message-ID` header. The additional `rfcMessageId` returned by reading is informational; clients cannot set threading headers or override the original subject in `messages_reply`.
@@ -36,7 +38,7 @@ The server fetches the original through the existing owned-account reader, using
 
 Missing, duplicated or unsupported original message IDs fail with `REPLY_MESSAGE_ID`. Modern ASCII dot-atom and domain-literal IDs, folded headers and surrounding comments are supported; obsolete quoted ID syntax is rejected explicitly. IDs are limited to 900 characters, original reference fields to 16,384 characters/100 IDs, and original subjects to 1,000 characters. Invalid or excessive references fail with `REPLY_REFERENCES`; excessive subjects fail with `REPLY_SUBJECT`. These errors occur before SMTP, with no fallback to an unrelated new email.
 
-The result includes outgoing `messageId`, `accepted`, `rejected`, `to`, `subject`, `inReplyTo`, and `references`. Inspect both recipient lists: SMTP may accept only some recipients. Delivery after a transport error can be uncertain; never retry automatically.
+The result includes outgoing `messageId`, `accepted`, `rejected`, `to`, `subject`, `inReplyTo`, and `references`. Inspect both recipient lists: SMTP may accept only some recipients. Delivery after a transport error can be uncertain; never retry automatically. Supply a client-generated `operationId` to deduplicate identical calls within the 24-hour process-local window. Results include an `operation` receipt; failures include its ID/state. Query `messages_send_status` for an uncertain result before considering another action. Receipts disappear on expiry/restart, and SMTP acceptance does not prove inbox delivery. [Full receipt and attachment-reference contracts](MCP.md).
 
 The web API also exposes `POST /api/mail/reply` with the same contract, authentication, CSRF checks and outgoing-upload budget. This release adds the MCP tool and API; the web composer has no new reply button. `mailmcp://capabilities` advertises `replyThreadHeaders: true`. Existing clients should refresh the catalog or reconnect to discover the reply tool.
 

@@ -281,7 +281,7 @@ try {
           assert.equal(localized.getInstructions(), expected.instructions);
           assert.equal(localized.getServerVersion().title, expected.server_title);
           const tools = (await localized.listTools()).tools;
-          assert.equal(tools.length, 18);
+          assert.equal(tools.length, 24);
           for (const tool of tools) {
             assert.equal(tool.description, expected[`tools.${tool.name}`]);
             assert.equal(tool.title, expected[`titles.${tool.name}`]);
@@ -297,7 +297,7 @@ try {
         }
       }
       console.log(
-        'PASS live EN/ES server instructions, 18 tool descriptions, parameter metadata and capabilities',
+        'PASS live EN/ES server instructions, 24 tool descriptions, parameter metadata and capabilities',
       );
       // Reauthorize the same user through a different client, as happens on reconnect.
       // The synthetic connected account must survive because ownership is issuer + sub.
@@ -432,7 +432,7 @@ try {
         );
       }
       console.log(
-        'PASS production MCP initializes and lists 18 tools with dynamically registered client token',
+        'PASS production MCP initializes and lists 24 tools with dynamically registered client token',
       );
     } finally {
       await mcp.close();
